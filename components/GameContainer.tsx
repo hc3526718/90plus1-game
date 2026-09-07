@@ -18,10 +18,14 @@ import TransferDecisionScreen from './screens/TransferDecisionScreen';
 export default function GameContainer() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [hasSave, setHasSave] = useState(false);
 
   useEffect(() => {
-    // Check for saved game on mount
-    if (hasSavedGame()) {
+    // Check for saved game on mount (client-side only)
+    const checkSave = hasSavedGame();
+    setHasSave(checkSave);
+    
+    if (checkSave) {
       const loaded = loadGame();
       if (loaded) {
         setGameState(loaded);
@@ -32,10 +36,10 @@ export default function GameContainer() {
 
   useEffect(() => {
     // Auto-save whenever game state changes
-    if (gameState) {
+    if (gameState && initialized) {
       saveGame(gameState);
     }
-  }, [gameState]);
+  }, [gameState, initialized]);
 
   const startNewGame = () => {
     setGameState({
@@ -70,7 +74,7 @@ export default function GameContainer() {
   if (!gameState) {
     return (
       <StartScreen
-        hasSave={hasSavedGame()}
+        hasSave={hasSave}
         onNewGame={startNewGame}
         onContinue={continueGame}
       />

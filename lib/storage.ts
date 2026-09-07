@@ -4,7 +4,12 @@ import { GameState } from './types';
 
 const STORAGE_KEY = '90plus1-save';
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
 export function saveGame(state: GameState): void {
+  if (!isBrowser) return;
+  
   try {
     const serialized = JSON.stringify(state);
     localStorage.setItem(STORAGE_KEY, serialized);
@@ -14,6 +19,8 @@ export function saveGame(state: GameState): void {
 }
 
 export function loadGame(): GameState | null {
+  if (!isBrowser) return null;
+  
   try {
     const serialized = localStorage.getItem(STORAGE_KEY);
     if (!serialized) return null;
@@ -25,9 +32,21 @@ export function loadGame(): GameState | null {
 }
 
 export function hasSavedGame(): boolean {
-  return localStorage.getItem(STORAGE_KEY) !== null;
+  if (!isBrowser) return false;
+  
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch (error) {
+    return false;
+  }
 }
 
 export function deleteSave(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  if (!isBrowser) return;
+  
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.error('Failed to delete save:', error);
+  }
 }
