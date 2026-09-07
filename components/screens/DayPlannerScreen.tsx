@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { GameState, DayActivity } from '@/lib/types';
-import { applyDayActivity, simulateMatch, checkTransferOffers } from '@/lib/gameEngine';
+import { useState, useEffect } from 'react';
+import { GameState, ActivityOption } from '@/lib/types';
+import { applyActivity, simulateMatch, checkTransferOffers } from '@/lib/gameEngine';
+import { generateDayActivities, getRestActivity } from '@/lib/activityDeck';
 
 interface DayPlannerScreenProps {
   gameState: GameState;
@@ -10,32 +11,73 @@ interface DayPlannerScreenProps {
 export default function DayPlannerScreen({ gameState, setGameState }: DayPlannerScreenProps) {
   const [currentDay, setCurrentDay] = useState(0);
   const [activityMessage, setActivityMessage] = useState('');
+  const [gamblingMessage, setGamblingMessage] = useState('');
 
-  const { player, currentWeek, partner } = gameState;
+  const { player, currentWeek, partner, teammates } = gameState;
   const isMatchDay = currentDay === currentWeek.matchDay;
   const currentDayPlan = currentWeek.days[currentDay];
+  
+  // Generate activities for this day if not already generated
+  useEffect(() => {
+    if (!isMatchDay && currentDayPlan.activities.length === 0 && !currentDayPlan.completed) {
+      const activities = generateDayActivities(
+        player,
+        partner,
+        teammates,
+        currentWeek.seasonPhase,
+        currentWeek.weekNumber
+      );
+      
+      const newWeek = { ...currentWeek };
+      newWeek.days[currentDay] = {
+        ...currentDayPlan,
+        activities,
+      };
+      
+      setGameState({
+        ...gameState,
+        currentWeek: newWeek,
+      });
+    }
+  }, [currentDay, isMatchDay]);
 
-  const handleActivity = (activity: DayActivity) => {
-    if (currentDayPlan.completed || !activity) return;
+  const handleActivity = (activity: ActivityOption) => {
+    if (currentDayPlan.completed) return;
 
-    const result = applyDayActivity(player, activity, partner);
+    const result = applyActivity(player, activity, partner);
+    
+    // Pay weekly wage on completion of week
+    const updatedPlayer = { ...result.player };
     
     // Update game state
     const newWeek = { ...currentWeek };
-    newWeek.days[currentDay] = { activity, completed: true };
+    newWeek.days[currentDay] = { 
+      ...currentDayPlan,
+      selectedActivity: activity,
+      completed: true,
+      trainingCount: activity.category === 'training' ? currentDayPlan.trainingCount + 1 : currentDayPlan.trainingCount,
+    };
 
     setGameState({
       ...gameState,
-      player: result.player,
+      player: updatedPlayer,
       partner: result.partner,
       currentWeek: newWeek,
     });
 
     setActivityMessage(result.message);
+    
+    if (result.gamblingResult) {
+      setGamblingMessage(result.gamblingResult.won 
+        ? `Won £${Math.abs(result.gamblingResult.amount)}!`
+        : `Lost £${Math.abs(result.gamblingResult.amount)}`
+      );
+    }
   };
 
   const handleNextDay = () => {
     setActivityMessage('');
+    setGamblingMessage('');
     
     if (currentDay === currentWeek.matchDay) {
       // Start match
@@ -51,12 +93,17 @@ export default function DayPlannerScreen({ gameState, setGameState }: DayPlanner
         gameScreen: 'match',
       });
     } else if (currentDay >= 6) {
-      // Week complete, check for transfers and loop
-      const offers = checkTransferOffers(gameState.player);
+      // Week complete - pay wage
+      const updatedPlayer = { ...gameState.player };
+      updatedPlayer.money += updatedPlayer.weeklyWage;
+      
+      // Check for transfers
+      const offers = checkTransferOffers(updatedPlayer);
       
       if (offers.length > 0) {
         setGameState({
           ...gameState,
+          player: updatedPlayer,
           transferOffers: offers,
           gameScreen: 'transfer-decision',
         });
@@ -64,10 +111,16 @@ export default function DayPlannerScreen({ gameState, setGameState }: DayPlanner
         // Start new week
         const newWeek = { ...currentWeek };
         newWeek.weekNumber += 1;
-        newWeek.days = Array(7).fill(null).map(() => ({ activity: null, completed: false }));
+        newWeek.days = Array(7).fill(null).map(() => ({ 
+          activities: [],
+          selectedActivity: null,
+          completed: false,
+          trainingCount: 0,
+        }));
         
         setGameState({
           ...gameState,
+          player: updatedPlayer,
           currentWeek: newWeek,
           gameScreen: 'weekly-briefing',
         });
@@ -77,18 +130,21 @@ export default function DayPlannerScreen({ gameState, setGameState }: DayPlanner
     }
   };
 
-  const canProgress = currentDayPlan.completed || currentDayPlan.activity === null;
+  const canProgress = currentDayPlan.completed;
 
   const getDayName = (day: number) => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[day];
   };
 
+  const restActivity = getRestActivity();
+  const availableActivities = [...currentDayPlan.activities, restActivity];
+
   return (
     <div className="screen day-planner-screen">
       <div className="screen-header">
         <h2>{getDayName(currentDay)}</h2>
-        <p>Week {currentWeek.weekNumber} - Day {currentDay + 1}</p>
+        <p>Week {currentWeek.weekNumber} - Day {currentDay + 1} - {currentWeek.seasonPhase.replace('-', ' ')}</p>
       </div>
 
       <div className="player-status">
@@ -99,6 +155,10 @@ export default function DayPlannerScreen({ gameState, setGameState }: DayPlanner
         <div className="mini-stat">
           <span>Form:</span>
           <span className="value">{player.form}/100</span>
+        </div>
+        <div className="mini-stat">
+          <span>Money:</span>
+          <span className="value">£{player.money}</span>
         </div>
         {partner && (
           <div className="mini-stat">
@@ -111,70 +171,39 @@ export default function DayPlannerScreen({ gameState, setGameState }: DayPlanner
       {isMatchDay ? (
         <div className="match-day-notice">
           <h3>⚽ MATCH DAY</h3>
-          <p>Time to play!</p>
+          <p>{currentWeek.matchType === 'cup' ? 'Cup Match!' : currentWeek.matchType === 'friendly' ? 'Friendly' : 'League Match'}</p>
         </div>
       ) : (
-        <div className="activity-choices">
-          <h3>Choose Activity</h3>
+        <div className="activity-deck">
+          <h3>Today's Activities</h3>
           {activityMessage && (
             <div className="activity-message">{activityMessage}</div>
           )}
+          {gamblingMessage && (
+            <div className="gambling-message">{gamblingMessage}</div>
+          )}
           
           {!currentDayPlan.completed ? (
-            <div className="activity-buttons">
-              <button 
-                className="activity-btn train"
-                onClick={() => handleActivity('train')}
-              >
-                <div className="activity-icon">🏋️</div>
-                <div className="activity-name">TRAIN</div>
-                <div className="activity-desc">-20 energy, +trust, +attributes</div>
-              </button>
-
-              <button 
-                className="activity-btn rest"
-                onClick={() => handleActivity('rest')}
-              >
-                <div className="activity-icon">😴</div>
-                <div className="activity-name">REST</div>
-                <div className="activity-desc">+30 energy</div>
-              </button>
-
-              <button 
-                className="activity-btn personal"
-                onClick={() => handleActivity('personal')}
-              >
-                <div className="activity-icon">💝</div>
-                <div className="activity-name">PERSONAL</div>
-                <div className="activity-desc">-5 energy, +relationship</div>
-              </button>
-
-              <button 
-                className="activity-btn media"
-                onClick={() => handleActivity('media')}
-              >
-                <div className="activity-icon">📰</div>
-                <div className="activity-name">MEDIA</div>
-                <div className="activity-desc">-10 energy, +media heat</div>
-              </button>
-
-              <button 
-                className="activity-btn skip"
-                onClick={() => {
-                  const newWeek = { ...currentWeek };
-                  newWeek.days[currentDay] = { activity: null, completed: true };
-                  setGameState({ ...gameState, currentWeek: newWeek });
-                  setActivityMessage('Day passed quietly.');
-                }}
-              >
-                <div className="activity-icon">⏭️</div>
-                <div className="activity-name">SKIP</div>
-                <div className="activity-desc">Light rest</div>
-              </button>
+            <div className="activity-cards">
+              {availableActivities.map((activity, index) => (
+                <button 
+                  key={activity.id + index}
+                  className={`activity-card ${activity.category}`}
+                  onClick={() => handleActivity(activity)}
+                  disabled={player.energy < activity.energyCost || (!!activity.metadata?.itemCost && player.money < activity.metadata.itemCost)}
+                >
+                  <div className="activity-card-title">{activity.title}</div>
+                  <div className="activity-card-desc">{activity.description}</div>
+                  <div className="activity-card-cost">
+                    {activity.energyCost > 0 && `⚡ -${activity.energyCost} energy`}
+                    {activity.metadata?.itemCost && ` | £${activity.metadata.itemCost}`}
+                  </div>
+                </button>
+              ))}
             </div>
           ) : (
             <div className="day-complete">
-              <p>✓ Activity complete</p>
+              <p>✓ {currentDayPlan.selectedActivity?.title || 'Activity complete'}</p>
             </div>
           )}
         </div>
@@ -182,7 +211,7 @@ export default function DayPlannerScreen({ gameState, setGameState }: DayPlanner
 
       {canProgress && (
         <button className="menu-btn primary" onClick={handleNextDay}>
-          {isMatchDay ? 'GO TO MATCH' : currentDay >= 6 ? 'FINISH WEEK' : 'NEXT DAY'}
+          {isMatchDay ? 'GO TO MATCH' : currentDay >= 6 ? 'FINISH WEEK (+£' + player.weeklyWage + ' wage)' : 'NEXT DAY'}
         </button>
       )}
     </div>

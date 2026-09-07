@@ -2,9 +2,13 @@
 
 A browser-based football career game inspired by Jumpers for Goalposts and New Star Soccer.
 
+## Version 1.5 - Activity Deck Update
+
+**90+1 v1.5** introduces the **Activity Deck** system, replacing repetitive day planning with an event-driven experience where each free day presents 2-4 unique invitations plus always-available Rest.
+
 ## Overview
 
-**90+1** is a Flash-era styled football career game where you create a player and work your way up from non-league to the top flight. The game focuses on weekly planning, matchday performance, and life management with a nostalgic chunky UI aesthetic.
+**90+1** is a Flash-era styled football career game where you create a player and work your way up from non-league to the top flight. The game focuses on dynamic weekly planning, matchday performance with skill moments, and life management with a nostalgic chunky UI aesthetic.
 
 ## Features
 
@@ -21,12 +25,41 @@ A browser-based football career game inspired by Jumpers for Goalposts and New S
    - Preview upcoming match
    - Review career statistics
 
-3. **Day Planner** (Monday - Sunday)
-   - **Train**: -20 energy, +manager trust, chance to improve attributes
-   - **Rest**: +30 energy
-   - **Personal**: -5 energy, chance to meet partner or improve relationship
-   - **Media**: -10 energy, +media heat, -manager trust slightly
-   - **Skip**: Light rest, day passes quietly
+3. **Activity Deck** (Monday - Saturday, free days)
+   Each day presents **2-4 unique invitations** based on your career state:
+   
+   **Training Variants**
+   - Shooting Drill, Fitness Training, Tactical Session
+   - Diminishing returns if trained too much (injury risk!)
+   - Different drills unlock as career progresses
+   
+   **Partner Activities**
+   - Dinner dates, days out, phone calls
+   - Specific invites based on relationship state
+   - Costs energy and money but improves mood
+   
+   **Teammate Events**
+   - Night out with the lads
+   - Bus gambling (higher-lower cards, £50 stake)
+   - Captain's BBQ and other team socials
+   
+   **Shopping & Lifestyle**
+   - Buy new kit, upgrade your car, luxury watches
+   - Unlocks based on wages and media heat
+   - Affects partner mood and media coverage
+   
+   **Media & Career**
+   - Press interviews, sponsorship meetings
+   - Manager meetings (if form/trust low)
+   - Agent calls (transfer window)
+   
+   **Story Cards** (1-2 per week)
+   - Tabloid offers, family visits, charity events
+   - Accept or skip - each choice has consequences
+   
+   **Rest** (always available)
+   - +30 energy, no cost
+   - Reset consecutive training counter
 
 4. **Matchday**
    - Live text commentary feed with match clock
@@ -70,7 +103,48 @@ A browser-based football career game inspired by Jumpers for Goalposts and New S
 - Maintain relationship or it deteriorates
 - Happy partners boost media heat
 - Ignoring relationships affects mood
-- Team chemistry through bus card games (future expansion point)
+- Gambling with teammates: 50/50 chance to win 2x stake
+
+### Season Phases
+
+The Activity Deck changes based on season phase:
+
+- **Preseason** (Weeks 1-4): More training options, friendly matches
+- **Early Season** (Weeks 5-15): Team socials, settling in
+- **Midseason** (Weeks 16-35): Grind mode, more media opportunities
+- **Run-in** (Weeks 36-46): Tighter recovery focus, high-stakes matches
+- **Summer** (Weeks 47-52): Transfer window, holiday options, no league matches
+
+### Career Unlocks
+
+Activities unlock as you progress:
+
+| Unlock | Requirement |
+|--------|-------------|
+| Basic teammate hangouts | Always available |
+| Bus gambling | £500+ weekly wage |
+| Basic shopping (kit) | £500+ wage |
+| Car upgrades | £1000+ wage |
+| Media interviews | 30+ media heat |
+| Sponsorship deals | 50+ media, League Two+ |
+| Luxury shopping | £2000+ wage, 40+ media |
+
+### Match Chance Scaling
+
+Player chances during matches scale with opponent strength:
+
+**Formula**: `targetChances = 3 * (playerStrength / opponentStrength)`
+
+- **Floor**: Minimum 1 chance even vs strong opponents
+- **Ceiling**: Maximum 6 chances even vs weak opponents
+- **Distribution**: Spread across first half, second half, possible injury time
+
+Example:
+- Equal strength (1.0 ratio) = ~3 chances
+- Stronger opponent (0.7 ratio) = ~2 chances
+- Weaker opponent (1.5 ratio) = ~4-5 chances
+
+Player strength = Club strength + form/10 + energy/10
 
 ### Fictional Club Structure
 

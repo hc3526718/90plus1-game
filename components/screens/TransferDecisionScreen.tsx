@@ -16,8 +16,10 @@ export default function TransferDecisionScreen({ gameState, setGameState }: Tran
       ...gameState.player,
       currentClubId: offer.fromClubId,
       currentTier: offer.tier,
+      weeklyWage: offer.offeredWage, // Update wage
       managerTrust: 60, // Reset trust at new club
       mediaHeat: Math.min(100, gameState.player.mediaHeat + 20), // Transfer news
+      consecutiveTraining: 0, // Fresh start
     };
 
     setGameState({

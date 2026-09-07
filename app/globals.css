@@ -526,6 +526,129 @@ body {
   font-weight: bold;
 }
 
+/* Activity Deck (v1.5) */
+.activity-deck {
+  margin-bottom: 1.5rem;
+}
+
+.activity-deck h3 {
+  font-size: 1.2rem;
+  color: #ffd700;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.gambling-message {
+  padding: 1rem;
+  background: rgba(245, 158, 11, 0.2);
+  border: 2px solid #f59e0b;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #fbbf24;
+  font-weight: bold;
+}
+
+.activity-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.activity-card {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 3px solid #4a90e2;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: inherit;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.activity-card:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.activity-card:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.activity-card.training {
+  border-color: #ef4444;
+}
+
+.activity-card.rest {
+  border-color: #3b82f6;
+}
+
+.activity-card.partner {
+  border-color: #ec4899;
+}
+
+.activity-card.teammate {
+  border-color: #8b5cf6;
+}
+
+.activity-card.shopping {
+  border-color: #f59e0b;
+}
+
+.activity-card.media {
+  border-color: #06b6d4;
+}
+
+.activity-card.manager,
+.activity-card.agent {
+  border-color: #84cc16;
+}
+
+.activity-card.story {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.activity-card-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.activity-card-desc {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+  flex-grow: 1;
+}
+
+.activity-card-cost {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+  .activity-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Match Screen */
 .match-header {
   display: flex;

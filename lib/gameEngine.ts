@@ -12,8 +12,7 @@ import {
   Partner,
   Teammate,
   TransferOffer,
-  GameState,
-  DayActivity
+  GameState
 } from './types';
 import { CLUBS, getClubById, getRandomName, PARTNER_NAMES } from './gameData';
 
@@ -53,7 +52,20 @@ export function createNewPlayer(name: string, preferredFoot: 'left' | 'right' | 
       goals: 0,
       assists: 0,
     },
+    money: 1000, // Starting savings
+    weeklyWage: 200, // Non-league wages
+    consecutiveTraining: 0,
+    recentPurchases: [],
   };
+}
+
+function getSeasonPhase(weekNumber: number): import('./types').SeasonPhase {
+  // Simple season phase logic (52 weeks = 1 year)
+  if (weekNumber <= 4) return 'preseason';
+  if (weekNumber <= 15) return 'early-season';
+  if (weekNumber <= 35) return 'midseason';
+  if (weekNumber <= 46) return 'run-in';
+  return 'summer';
 }
 
 export function createInitialWeek(playerClubId: string, weekNumber: number): Week {
@@ -63,90 +75,121 @@ export function createInitialWeek(playerClubId: string, weekNumber: number): Wee
     c => c.tier === playerClub?.tier && c.id !== playerClubId
   );
   const opponent = opponents[Math.floor(Math.random() * opponents.length)];
+  
+  const phase = getSeasonPhase(weekNumber);
+  
+  // Determine match type (mostly league, occasional cup)
+  let matchType: 'league' | 'cup' | 'friendly' = 'league';
+  if (phase === 'preseason') matchType = 'friendly';
+  else if (Math.random() > 0.85) matchType = 'cup';
 
   return {
     weekNumber,
-    days: Array(7).fill(null).map(() => ({ activity: null, completed: false })),
-    hasMatch: true,
+    seasonPhase: phase,
+    days: Array(7).fill(null).map(() => ({ 
+      activities: [],
+      selectedActivity: null,
+      completed: false,
+      trainingCount: 0,
+    })),
+    hasMatch: phase !== 'summer', // No matches in summer
     matchDay: 6, // Sunday
     opponentId: opponent.id,
+    matchType,
   };
 }
 
-export function applyDayActivity(
+export function applyActivity(
   player: Player,
-  activity: DayActivity,
+  activity: import('./types').ActivityOption,
   partner: Partner | null
-): { player: Player; partner: Partner | null; message: string } {
+): { player: Player; partner: Partner | null; message: string; gamblingResult?: { won: boolean; amount: number } } {
   const newPlayer = { ...player };
   let newPartner = partner ? { ...partner } : null;
   let message = '';
+  let gamblingResult: { won: boolean; amount: number } | undefined;
 
-  switch (activity) {
-    case 'train':
-      newPlayer.energy = Math.max(0, newPlayer.energy - 20);
-      newPlayer.managerTrust = Math.min(100, newPlayer.managerTrust + 3);
-      
-      // Random attribute improvement (small)
-      const attrs = ['finishing', 'composure', 'pace', 'stamina', 'awareness'] as const;
-      const attrToImprove = attrs[Math.floor(Math.random() * attrs.length)];
-      if (newPlayer.attributes[attrToImprove] < 20 && Math.random() > 0.7) {
-        newPlayer.attributes[attrToImprove] += 1;
-        message = `Training improved your ${attrToImprove}!`;
+  // Apply activity effects
+  if (activity.effects) {
+    const { energy, form, trust, media, partnerMood, money, attributeChance } = activity.effects;
+    
+    if (energy) newPlayer.energy = Math.max(0, Math.min(100, newPlayer.energy + energy));
+    if (form) newPlayer.form = Math.max(0, Math.min(100, newPlayer.form + form));
+    if (trust) newPlayer.managerTrust = Math.max(0, Math.min(100, newPlayer.managerTrust + trust));
+    if (media) newPlayer.mediaHeat = Math.max(0, Math.min(100, newPlayer.mediaHeat + media));
+    if (money) newPlayer.money += money;
+    
+    if (partnerMood && newPartner) {
+      newPartner.mood = Math.max(0, Math.min(100, newPartner.mood + partnerMood));
+    }
+    
+    // Attribute improvement chance (training activities)
+    if (attributeChance && newPlayer.attributes[attributeChance] < 20) {
+      // Diminishing returns based on consecutive training
+      const improvementChance = 0.7 - (newPlayer.consecutiveTraining * 0.1);
+      if (Math.random() < improvementChance) {
+        newPlayer.attributes[attributeChance] += 1;
+        message = `✨ ${activity.title}: ${attributeChance} improved!`;
       } else {
-        message = 'Good training session.';
+        message = `${activity.title} completed.`;
       }
-      
-      if (newPartner) {
-        newPartner.mood = Math.max(0, newPartner.mood - 2);
-      }
-      break;
-
-    case 'rest':
-      newPlayer.energy = Math.min(100, newPlayer.energy + 30);
-      message = 'You feel refreshed.';
-      break;
-
-    case 'personal':
-      newPlayer.energy = Math.max(0, newPlayer.energy - 5);
-      
-      if (!newPartner) {
-        // Chance to meet someone
-        if (Math.random() > 0.6) {
-          newPartner = {
-            name: PARTNER_NAMES[Math.floor(Math.random() * PARTNER_NAMES.length)],
-            mood: 60,
-            relationshipStrength: 40,
-          };
-          message = `You met ${newPartner.name}!`;
-        } else {
-          message = 'A quiet day off.';
-        }
-      } else {
-        // Improve relationship
-        newPartner.mood = Math.min(100, newPartner.mood + 15);
-        newPartner.relationshipStrength = Math.min(100, newPartner.relationshipStrength + 10);
-        newPlayer.mediaHeat = Math.min(100, newPlayer.mediaHeat + 5);
-        message = `Quality time with ${newPartner.name}.`;
-      }
-      break;
-
-    case 'media':
-      newPlayer.energy = Math.max(0, newPlayer.energy - 10);
-      newPlayer.mediaHeat = Math.min(100, newPlayer.mediaHeat + 15);
-      newPlayer.managerTrust = Math.max(0, newPlayer.managerTrust - 2);
-      message = 'Press coverage increased.';
-      
-      if (newPartner) {
-        newPartner.mood = Math.max(0, newPartner.mood - 5);
-      }
-      break;
-
-    default:
-      message = 'Day passed.';
+    } else {
+      message = `${activity.title} completed.`;
+    }
+  }
+  
+  // Category-specific logic
+  if (activity.category === 'training') {
+    newPlayer.consecutiveTraining += 1;
+    
+    // Injury risk
+    const injuryRisk = activity.metadata?.injuryRisk || 0;
+    if (Math.random() < injuryRisk) {
+      newPlayer.energy = Math.max(0, newPlayer.energy - 15);
+      message = `⚠️ Overtraining! You're fatigued.`;
+    }
+    
+    // Partner mood impact
+    if (newPartner) {
+      newPartner.mood = Math.max(0, newPartner.mood - 3);
+    }
+  } else {
+    // Reset consecutive training if doing something else
+    newPlayer.consecutiveTraining = 0;
+  }
+  
+  // Shopping: track purchases
+  if (activity.category === 'shopping') {
+    newPlayer.recentPurchases.push(activity.id);
+    if (newPlayer.recentPurchases.length > 5) {
+      newPlayer.recentPurchases.shift(); // Keep last 5
+    }
+  }
+  
+  // Partner activities: meet someone if don't have partner
+  if (activity.category === 'partner' && !newPartner) {
+    newPartner = {
+      name: PARTNER_NAMES[Math.floor(Math.random() * PARTNER_NAMES.length)],
+      mood: 60,
+      relationshipStrength: 40,
+    };
+    message = `You met ${newPartner.name}!`;
+  }
+  
+  // Gambling: run the minigame
+  if (activity.metadata?.teammateEvent === 'gambling') {
+    const stake = activity.metadata.itemCost || 50;
+    // Simple higher-lower: 50% chance to win 2x
+    const won = Math.random() > 0.5;
+    const amount = won ? stake : -stake;
+    newPlayer.money += amount;
+    gamblingResult = { won, amount };
+    message = won 
+      ? `🎰 Won £${stake} on the bus!`
+      : `Lost £${stake} on the bus.`;
   }
 
-  return { player: newPlayer, partner: newPartner, message };
+  return { player: newPlayer, partner: newPartner, message, gamblingResult };
 }
 
 export function simulateMatch(
@@ -165,6 +208,17 @@ export function simulateMatch(
   const playerTeamStrength = playerClub.strength + (player.form / 10) + (player.energy / 10);
   const opponentStrength = opponent.strength;
 
+  // Calculate player chances based on relative strength
+  // Formula: base chances scaled by strength ratio, with floor and ceiling
+  // Strength ratio > 1 = stronger team, < 1 = weaker team
+  const strengthRatio = playerTeamStrength / opponentStrength;
+  
+  // Base chances: 3, scaled by ratio
+  // Floor: 1-2 chances even vs strong opponents
+  // Ceiling: 5-6 chances even vs weak opponents
+  let targetPlayerChances = Math.round(3 * strengthRatio);
+  targetPlayerChances = Math.max(1, Math.min(6, targetPlayerChances));
+  
   const rng = new SeededRandom(Date.now());
   const events: MatchEvent[] = [];
   
@@ -173,6 +227,7 @@ export function simulateMatch(
   let playerRating = 6.0;
   let playerGoals = 0;
   let playerAssists = 0;
+  let playerChancesGenerated = 0;
 
   // Generate match events
   events.push({
@@ -181,44 +236,70 @@ export function simulateMatch(
     description: `Kick-off! ${homeTeam} vs ${awayTeam}`,
   });
 
+  // Pre-determine when player chances will occur (distributed across match)
+  const playerChanceMinutes: number[] = [];
+  const halfChances = Math.floor(targetPlayerChances / 2);
+  const secondHalfChances = targetPlayerChances - halfChances;
+  
+  // First half player chances (spread between 5-42 minutes)
+  for (let i = 0; i < halfChances; i++) {
+    const min = 5 + Math.floor(rng.next() * 37);
+    playerChanceMinutes.push(min);
+  }
+  
+  // Second half player chances (spread between 50-87 minutes)
+  for (let i = 0; i < secondHalfChances; i++) {
+    const min = 50 + Math.floor(rng.next() * 37);
+    playerChanceMinutes.push(min);
+  }
+  
+  // Possibly add injury time chance (if not at ceiling)
+  if (targetPlayerChances < 6 && rng.next() > 0.6) {
+    const injuryMin = 90 + Math.floor(rng.next() * 3) + 1;
+    playerChanceMinutes.push(injuryMin);
+  }
+  
+  playerChanceMinutes.sort((a, b) => a - b);
+
   // Simulate first half
   for (let min = 1; min <= 45; min += Math.floor(rng.next() * 15) + 5) {
-    if (rng.next() > 0.7) {
+    // Check if this minute should have a player chance
+    const hasPlayerChance = playerChanceMinutes.includes(min);
+    
+    if (hasPlayerChance) {
+      events.push({
+        minute: min,
+        type: 'chance',
+        description: `${player.name} with a chance!`,
+        playerInvolved: true,
+      });
+      playerChancesGenerated++;
+    } else if (rng.next() > 0.7) {
+      // Other team chances and goals
       const isPlayerTeamChance = rng.next() < (playerTeamStrength / (playerTeamStrength + opponentStrength));
       
-      if (isPlayerTeamChance && rng.next() > 0.5) {
-        // Player gets the chance - this will trigger a minigame
-        events.push({
-          minute: min,
-          type: 'chance',
-          description: `${player.name} with a chance!`,
-          playerInvolved: true,
-        });
-      } else {
-        // Other player scores/misses
-        if (rng.next() > 0.65) {
-          if (isPlayerTeamChance) {
-            if (isHome) homeScore++; else awayScore++;
-            events.push({
-              minute: min,
-              type: 'goal',
-              description: `GOAL! ${isHome ? homeTeam : awayTeam} ${isHome ? homeScore : awayScore} - ${!isHome ? homeScore : awayScore} ${!isHome ? homeTeam : awayTeam}`,
-            });
-          } else {
-            if (isHome) awayScore++; else homeScore++;
-            events.push({
-              minute: min,
-              type: 'goal',
-              description: `GOAL! ${!isHome ? homeTeam : awayTeam} ${!isHome ? homeScore : awayScore} - ${isHome ? homeScore : awayScore} ${isHome ? homeTeam : awayTeam}`,
-            });
-          }
-        } else {
+      if (rng.next() > 0.65) {
+        if (isPlayerTeamChance) {
+          if (isHome) homeScore++; else awayScore++;
           events.push({
             minute: min,
-            type: 'miss',
-            description: `Chance goes begging for ${isPlayerTeamChance ? (isHome ? homeTeam : awayTeam) : (!isHome ? homeTeam : awayTeam)}`,
+            type: 'goal',
+            description: `GOAL! ${isHome ? homeTeam : awayTeam} ${isHome ? homeScore : awayScore} - ${!isHome ? homeScore : awayScore} ${!isHome ? homeTeam : awayTeam}`,
+          });
+        } else {
+          if (isHome) awayScore++; else homeScore++;
+          events.push({
+            minute: min,
+            type: 'goal',
+            description: `GOAL! ${!isHome ? homeTeam : awayTeam} ${!isHome ? homeScore : awayScore} - ${isHome ? homeScore : awayScore} ${isHome ? homeTeam : awayTeam}`,
           });
         }
+      } else {
+        events.push({
+          minute: min,
+          type: 'miss',
+          description: `Chance goes begging for ${isPlayerTeamChance ? (isHome ? homeTeam : awayTeam) : (!isHome ? homeTeam : awayTeam)}`,
+        });
       }
     }
   }
@@ -231,58 +312,59 @@ export function simulateMatch(
 
   // Simulate second half
   for (let min = 46; min <= 90; min += Math.floor(rng.next() * 15) + 5) {
-    if (rng.next() > 0.7) {
+    // Check if this minute should have a player chance
+    const hasPlayerChance = playerChanceMinutes.includes(min);
+    
+    if (hasPlayerChance) {
+      events.push({
+        minute: min,
+        type: 'chance',
+        description: `${player.name} with a chance!`,
+        playerInvolved: true,
+      });
+      playerChancesGenerated++;
+    } else if (rng.next() > 0.7) {
+      // Other team chances and goals
       const isPlayerTeamChance = rng.next() < (playerTeamStrength / (playerTeamStrength + opponentStrength));
       
-      if (isPlayerTeamChance && rng.next() > 0.5) {
-        events.push({
-          minute: min,
-          type: 'chance',
-          description: `${player.name} with a chance!`,
-          playerInvolved: true,
-        });
-      } else {
-        if (rng.next() > 0.65) {
-          if (isPlayerTeamChance) {
-            if (isHome) homeScore++; else awayScore++;
-            events.push({
-              minute: min,
-              type: 'goal',
-              description: `GOAL! ${isHome ? homeTeam : awayTeam} ${isHome ? homeScore : awayScore} - ${!isHome ? homeScore : awayScore} ${!isHome ? homeTeam : awayTeam}`,
-            });
-          } else {
-            if (isHome) awayScore++; else homeScore++;
-            events.push({
-              minute: min,
-              type: 'goal',
-              description: `GOAL! ${!isHome ? homeTeam : awayTeam} ${!isHome ? homeScore : awayScore} - ${isHome ? homeScore : awayScore} ${isHome ? homeTeam : awayTeam}`,
-            });
-          }
-        } else {
+      if (rng.next() > 0.65) {
+        if (isPlayerTeamChance) {
+          if (isHome) homeScore++; else awayScore++;
           events.push({
             minute: min,
-            type: 'miss',
-            description: `Chance goes begging for ${isPlayerTeamChance ? (isHome ? homeTeam : awayTeam) : (!isHome ? homeTeam : awayTeam)}`,
+            type: 'goal',
+            description: `GOAL! ${isHome ? homeTeam : awayTeam} ${isHome ? homeScore : awayScore} - ${!isHome ? homeScore : awayScore} ${!isHome ? homeTeam : awayTeam}`,
+          });
+        } else {
+          if (isHome) awayScore++; else homeScore++;
+          events.push({
+            minute: min,
+            type: 'goal',
+            description: `GOAL! ${!isHome ? homeTeam : awayTeam} ${!isHome ? homeScore : awayScore} - ${isHome ? homeScore : awayScore} ${isHome ? homeTeam : awayTeam}`,
           });
         }
+      } else {
+        events.push({
+          minute: min,
+          type: 'miss',
+          description: `Chance goes begging for ${isPlayerTeamChance ? (isHome ? homeTeam : awayTeam) : (!isHome ? homeTeam : awayTeam)}`,
+        });
       }
     }
   }
 
-  // Injury time chances (tighter windows)
-  if (rng.next() > 0.6) {
-    const injuryMin = 90 + Math.floor(rng.next() * 3) + 1;
-    const isPlayerTeamChance = rng.next() < (playerTeamStrength / (playerTeamStrength + opponentStrength));
-    
-    if (isPlayerTeamChance && rng.next() > 0.5) {
+  // Injury time player chance if scheduled
+  playerChanceMinutes.forEach(min => {
+    if (min > 90) {
       events.push({
-        minute: injuryMin,
+        minute: min,
         type: 'chance',
         description: `Last gasp chance for ${player.name}!`,
         playerInvolved: true,
       });
+      playerChancesGenerated++;
     }
-  }
+  });
 
   events.push({
     minute: 90,
@@ -301,6 +383,7 @@ export function simulateMatch(
     playerRating,
     playerGoals,
     playerAssists,
+    displayedUpTo: 0,
   };
 }
 

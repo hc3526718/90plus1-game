@@ -25,6 +25,10 @@ export interface Player {
     goals: number;
     assists: number;
   };
+  money: number;          // Career savings
+  weeklyWage: number;     // Current wage
+  consecutiveTraining: number;  // Track training spam for diminishing returns/injury
+  recentPurchases: string[];    // Track lifestyle purchases for unlocks
 }
 
 export interface Club {
@@ -46,19 +50,67 @@ export interface Teammate {
   relationship: number;   // 0-100
 }
 
-export type DayActivity = 'train' | 'rest' | 'personal' | 'media' | null;
+// Activity Deck types
+export type ActivityCategory = 
+  | 'training'
+  | 'rest'
+  | 'partner'
+  | 'teammate'
+  | 'shopping'
+  | 'media'
+  | 'manager'
+  | 'agent'
+  | 'story';
+
+export type TrainingType = 
+  | 'shooting-drill'
+  | 'fitness'
+  | 'tactical'
+  | 'free-kicks'
+  | 'conditioning';
+
+export interface ActivityOption {
+  id: string;
+  category: ActivityCategory;
+  title: string;
+  description: string;
+  energyCost: number;
+  unlocked: boolean;
+  effects?: {
+    energy?: number;
+    form?: number;
+    trust?: number;
+    media?: number;
+    partnerMood?: number;
+    money?: number;
+    attributeChance?: keyof PlayerAttributes;
+  };
+  metadata?: {
+    trainingType?: TrainingType;
+    injuryRisk?: number;
+    partnerEvent?: string;
+    teammateEvent?: string;
+    itemCost?: number;
+  };
+}
 
 export interface DayPlan {
-  activity: DayActivity;
+  activities: ActivityOption[];  // 2-4 invitations per day
+  selectedActivity: ActivityOption | null;
   completed: boolean;
+  trainingCount: number;  // Track training spam for diminishing returns
 }
+
+export type SeasonPhase = 'preseason' | 'early-season' | 'midseason' | 'run-in' | 'summer';
 
 export interface Week {
   weekNumber: number;
+  seasonPhase: SeasonPhase;
   days: DayPlan[];
   hasMatch: boolean;
   matchDay: number;       // 0-6 for which day the match is
   opponentId: string;
+  matchType: 'league' | 'cup' | 'friendly';  // Match variety
 }
 
 export interface MatchEvent {
@@ -79,6 +131,7 @@ export interface MatchState {
   playerRating: number;   // 0-10
   playerGoals: number;
   playerAssists: number;
+  displayedUpTo: number;  // Track which events have been displayed (for resuming after minigames)
 }
 
 export type MinigameType = 'shot' | 'penalty';

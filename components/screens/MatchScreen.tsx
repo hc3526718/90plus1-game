@@ -7,11 +7,13 @@ interface MatchScreenProps {
 }
 
 export default function MatchScreen({ gameState, setGameState }: MatchScreenProps) {
-  const [displayedEvents, setDisplayedEvents] = useState<MatchEvent[]>([]);
-  const [currentEventIndex, setCurrentEventIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-
   const matchState = gameState.matchState!;
+  
+  const [displayedEvents, setDisplayedEvents] = useState<MatchEvent[]>(
+    () => matchState.events.slice(0, matchState.displayedUpTo)
+  );
+  const [currentEventIndex, setCurrentEventIndex] = useState(matchState.displayedUpTo);
+  const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
     if (!isPlaying || currentEventIndex >= matchState.events.length) {
@@ -25,12 +27,19 @@ export default function MatchScreen({ gameState, setGameState }: MatchScreenProp
     if (nextEvent.playerInvolved && nextEvent.type === 'chance') {
       setIsPlaying(false);
       
+      // Update displayedUpTo to mark we've shown events up to this point
+      const updatedMatchState = {
+        ...matchState,
+        displayedUpTo: currentEventIndex,
+      };
+      
       // Create minigame
       const difficulty = nextEvent.minute >= 90 ? 0.8 : 0.5; // Tighter in injury time
       const minigameType = Math.random() > 0.7 ? 'penalty' : 'shot';
       
       setGameState({
         ...gameState,
+        matchState: updatedMatchState,
         minigameState: {
           type: minigameType,
           startTime: Date.now(),
