@@ -12,7 +12,7 @@ export default function MinigameScreen({ gameState, setGameState }: MinigameScre
   const [powerLevel, setPowerLevel] = useState(0);
   const [isPowerBuilding, setIsPowerBuilding] = useState(true);
   const [hasShot, setHasShot] = useState(false);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   const minigame = gameState.minigameState!;
   const isInjuryTime = gameState.matchState!.events[gameState.matchState!.events.length - 1]?.minute >= 90;
