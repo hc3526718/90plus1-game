@@ -12,51 +12,72 @@ interface DayPlannerScreenProps {
 export default function DayPlannerScreen({ gameState, setGameState, onReturnToMenu }: DayPlannerScreenProps) {
   const [currentDay, setCurrentDay] = useState(0);
   const [activityMessage, setActivityMessage] = useState('');
-  const [gamblingMessage, setGamblingMessage] = useState('');
+  const [specialEvent, setSpecialEvent] = useState<ActivityOption | null>(null);
+  const [showEventPopup, setShowEventPopup] = useState(false);
+  const [dayCompleted, setDayCompleted] = useState(false);
 
   const { player, currentWeek, partner, teammates } = gameState;
   const isMatchDay = currentDay === currentWeek.matchDay;
   const currentDayPlan = currentWeek.days[currentDay];
   
-  // Generate activities for this day if not already generated
+  // Check for special event on day start (RARE - 15% chance)
   useEffect(() => {
-    if (!isMatchDay && currentDayPlan.activities.length === 0 && !currentDayPlan.completed) {
-      const activities = generateDayActivities(
-        player,
-        partner,
-        teammates,
-        currentWeek.seasonPhase,
-        currentWeek.weekNumber
-      );
+    if (!isMatchDay && !currentDayPlan.completed && !dayCompleted) {
+      const shouldShowEvent = Math.random() < 0.15; // RARE: 15% chance
       
-      const newWeek = { ...currentWeek };
-      newWeek.days[currentDay] = {
-        ...currentDayPlan,
-        activities,
-      };
-      
-      setGameState({
-        ...gameState,
-        currentWeek: newWeek,
-      });
+      if (shouldShowEvent) {
+        // Generate ONE special event
+        const events = generateDayActivities(
+          player,
+          partner,
+          teammates,
+          currentWeek.seasonPhase,
+          currentWeek.weekNumber
+        );
+        
+        if (events.length > 0) {
+          const event = events[0]; // Just take the first one
+          setSpecialEvent(event);
+          setShowEventPopup(true);
+        } else {
+          // No valid events, default to training
+          autoTrain();
+        }
+      } else {
+        // No event - DEFAULT to training
+        autoTrain();
+      }
     }
-  }, [currentDay, isMatchDay]);
+  }, [currentDay]);
 
-  const handleActivity = (activity: ActivityOption) => {
-    if (currentDayPlan.completed) return;
+  // AUTO-TRAIN (default/inferred training)
+  const autoTrain = () => {
+    if (currentDayPlan.completed || dayCompleted) return;
 
-    const result = applyActivity(player, activity, partner);
+    const trainingActivity: ActivityOption = {
+      id: 'auto-train',
+      category: 'training',
+      title: 'Training Session',
+      description: 'Standard training day',
+      energyCost: 20,
+      unlocked: true,
+      effects: {
+        energy: -20,
+        form: 5,
+        trust: 2,
+      },
+    };
+
+    const result = applyActivity(player, trainingActivity, partner);
     
-    // Pay weekly wage on completion of week
     const updatedPlayer = { ...result.player };
     
-    // Update game state
     const newWeek = { ...currentWeek };
     newWeek.days[currentDay] = { 
       ...currentDayPlan,
-      selectedActivity: activity,
+      selectedActivity: trainingActivity,
       completed: true,
-      trainingCount: activity.category === 'training' ? currentDayPlan.trainingCount + 1 : currentDayPlan.trainingCount,
+      trainingCount: currentDayPlan.trainingCount + 1,
     };
 
     setGameState({
@@ -66,39 +87,66 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
       currentWeek: newWeek,
     });
 
-    setActivityMessage(result.message);
+    setDayCompleted(true);
+    setActivityMessage('✓ Training complete');
+  };
+
+  // Handle accepting a special event
+  const acceptEvent = () => {
+    if (!specialEvent) return;
+
+    const result = applyActivity(player, specialEvent, partner);
     
-    if (result.gamblingResult) {
-      setGamblingMessage(result.gamblingResult.won 
-        ? `Won £${Math.abs(result.gamblingResult.amount)}!`
-        : `Lost £${Math.abs(result.gamblingResult.amount)}`
-      );
-    }
+    const updatedPlayer = { ...result.player };
+    
+    const newWeek = { ...currentWeek };
+    newWeek.days[currentDay] = { 
+      ...currentDayPlan,
+      selectedActivity: specialEvent,
+      completed: true,
+      trainingCount: 0, // Missed training
+    };
+
+    setGameState({
+      ...gameState,
+      player: updatedPlayer,
+      partner: result.partner,
+      currentWeek: newWeek,
+    });
+
+    setShowEventPopup(false);
+    setDayCompleted(true);
+    setActivityMessage(`✓ ${specialEvent.title}: ${result.message}`);
+  };
+
+  // Handle declining event (train instead)
+  const declineEvent = () => {
+    setShowEventPopup(false);
+    setSpecialEvent(null);
+    autoTrain();
   };
 
   const handleNextDay = () => {
     setActivityMessage('');
-    setGamblingMessage('');
+    setDayCompleted(false);
+    setSpecialEvent(null);
+    setShowEventPopup(false);
     
-    if (currentDay === currentWeek.matchDay) {
+    if (isMatchDay) {
       // Start match
-      const matchState = simulateMatch(
-        gameState.player,
-        gameState.player.currentClubId,
-        currentWeek.opponentId
-      );
-      
+      const match = simulateMatch(player, player.currentClubId, currentWeek.opponentId);
       setGameState({
         ...gameState,
-        matchState,
+        matchState: match,
         gameScreen: 'match',
       });
     } else if (currentDay >= 6) {
-      // Week complete - pay wage
-      const updatedPlayer = { ...gameState.player };
-      updatedPlayer.money += updatedPlayer.weeklyWage;
-      
-      // Check for transfers
+      // Week complete - pay wage and check transfers
+      const updatedPlayer = {
+        ...player,
+        money: player.money + player.weeklyWage,
+      };
+
       const offers = checkTransferOffers(updatedPlayer);
       
       if (offers.length > 0) {
@@ -109,16 +157,22 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
           gameScreen: 'transfer-decision',
         });
       } else {
-        // Start new week
-        const newWeek = { ...currentWeek };
-        newWeek.weekNumber += 1;
-        newWeek.days = Array(7).fill(null).map(() => ({ 
-          activities: [],
-          selectedActivity: null,
-          completed: false,
-          trainingCount: 0,
-        }));
-        
+        // New week
+        const newWeek = {
+          weekNumber: currentWeek.weekNumber + 1,
+          seasonPhase: currentWeek.seasonPhase,
+          days: Array(7).fill(null).map(() => ({ 
+            activities: [],
+            selectedActivity: null,
+            completed: false,
+            trainingCount: 0,
+          })),
+          hasMatch: true,
+          matchDay: 6,
+          opponentId: currentWeek.opponentId,
+          matchType: 'league' as const,
+        };
+
         setGameState({
           ...gameState,
           player: updatedPlayer,
@@ -127,19 +181,15 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
         });
       }
     } else {
+      // Next day
       setCurrentDay(currentDay + 1);
     }
   };
-
-  const canProgress = currentDayPlan.completed;
 
   const getDayName = (day: number) => {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[day];
   };
-
-  const restActivity = getRestActivity();
-  const availableActivities = [...currentDayPlan.activities, restActivity];
 
   return (
     <div className="screen day-planner-screen">
@@ -150,7 +200,7 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
       )}
       <div className="screen-header">
         <h2>{getDayName(currentDay)}</h2>
-        <p>Week {currentWeek.weekNumber} - Day {currentDay + 1} - {currentWeek.seasonPhase.replace('-', ' ')}</p>
+        <p>Week {currentWeek.weekNumber} - Day {currentDay + 1}</p>
       </div>
 
       <div className="player-status">
@@ -166,12 +216,6 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
           <span>Money:</span>
           <span className="value">£{player.money}</span>
         </div>
-        {partner && (
-          <div className="mini-stat">
-            <span>{partner.name}:</span>
-            <span className="value">{partner.mood >= 70 ? '😊' : partner.mood >= 40 ? '😐' : '😔'}</span>
-          </div>
-        )}
       </div>
 
       {isMatchDay ? (
@@ -180,46 +224,75 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
           <p>{currentWeek.matchType === 'cup' ? 'Cup Match!' : currentWeek.matchType === 'friendly' ? 'Friendly' : 'League Match'}</p>
         </div>
       ) : (
-        <div className="activity-deck">
-          <h3>Today's Activities</h3>
-          {activityMessage && (
-            <div className="activity-message">{activityMessage}</div>
-          )}
-          {gamblingMessage && (
-            <div className="gambling-message">{gamblingMessage}</div>
-          )}
-          
-          {!currentDayPlan.completed ? (
-            <div className="activity-cards">
-              {availableActivities.map((activity, index) => (
-                <button 
-                  key={activity.id + index}
-                  className={`activity-card ${activity.category}`}
-                  onClick={() => handleActivity(activity)}
-                  disabled={player.energy < activity.energyCost || (!!activity.metadata?.itemCost && player.money < activity.metadata.itemCost)}
-                >
-                  <div className="activity-card-title">{activity.title}</div>
-                  <div className="activity-card-desc">{activity.description}</div>
-                  <div className="activity-card-cost">
-                    {activity.energyCost > 0 && `⚡ -${activity.energyCost} energy`}
-                    {activity.metadata?.itemCost && ` | £${activity.metadata.itemCost}`}
-                  </div>
-                </button>
-              ))}
+        <>
+          {/* Special Event Popup (RARE) */}
+          {showEventPopup && specialEvent && (
+            <div className="event-popup-overlay">
+              <div className="event-popup-card">
+                <h3>Special Event!</h3>
+                <div className="event-content">
+                  <div className="event-icon">{getEventIcon(specialEvent.category)}</div>
+                  <h4>{specialEvent.title}</h4>
+                  <p>{specialEvent.description}</p>
+                  {specialEvent.metadata?.itemCost && (
+                    <p className="event-cost">Cost: £{specialEvent.metadata.itemCost}</p>
+                  )}
+                  {specialEvent.energyCost > 0 && (
+                    <p className="event-energy">Energy: -{specialEvent.energyCost}</p>
+                  )}
+                </div>
+                <div className="event-buttons">
+                  <button 
+                    className="menu-btn primary"
+                    onClick={acceptEvent}
+                    disabled={player.energy < specialEvent.energyCost || (!!specialEvent.metadata?.itemCost && player.money < specialEvent.metadata.itemCost)}
+                  >
+                    ACCEPT (miss training)
+                  </button>
+                  <button 
+                    className="menu-btn secondary"
+                    onClick={declineEvent}
+                  >
+                    DECLINE (train instead)
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="day-complete">
-              <p>✓ {currentDayPlan.selectedActivity?.title || 'Activity complete'}</p>
+          )}
+
+          {/* Normal Training Day */}
+          {!showEventPopup && (
+            <div className="training-day">
+              <h3>Training Day</h3>
+              {activityMessage ? (
+                <p className="day-summary">{activityMessage}</p>
+              ) : (
+                <p className="training-description">
+                  Working on fitness, tactics, and skills...
+                </p>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
 
-      {canProgress && (
+      {(dayCompleted || isMatchDay) && (
         <button className="menu-btn primary" onClick={handleNextDay}>
           {isMatchDay ? 'GO TO MATCH' : currentDay >= 6 ? 'FINISH WEEK (+£' + player.weeklyWage + ' wage)' : 'NEXT DAY'}
         </button>
       )}
     </div>
   );
+}
+
+function getEventIcon(category: string): string {
+  switch (category) {
+    case 'partner': return '❤️';
+    case 'teammate': return '🎲';
+    case 'shopping': return '🛍️';
+    case 'media': return '📸';
+    case 'manager': return '👔';
+    case 'agent': return '💼';
+    default: return '⭐';
+  }
 }
