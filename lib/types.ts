@@ -172,7 +172,7 @@ export interface Agent {
 }
 
 // Skill Trials - backyard onboarding minigames
-export type TrialType = 'volleys' | 'penalties' | 'snap-shots' | 'passing' | 'heading' | 'turn-and-shoot';
+export type TrialType = 'volleys' | 'penalties' | 'snap-shots' | 'headers' | 'free-kicks' | 'through-balls';
 
 export interface TrialResult {
   type: TrialType;

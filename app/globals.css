@@ -1321,6 +1321,26 @@ body {
   margin-bottom: 1rem;
 }
 
+.skill-trials-screen .trial-tip {
+  font-size: 1rem;
+  color: #44ff44;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.skill-trials-screen .attempt-feedback {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin: 0.5rem 0;
+}
+
+.skill-trials-screen .trial-instruction {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+}
+
 /* Contract Offers Screen */
 .contract-offers-screen .trial-summary {
   background: rgba(0, 0, 0, 0.3);
