@@ -261,18 +261,26 @@ export function simulateMatch(
   
   playerChanceMinutes.sort((a, b) => a - b);
 
+  // Track which chances have been added (to prevent duplicates)
+  const usedChanceMinutes = new Set<number>();
+
   // Simulate first half
   for (let min = 1; min <= 45; min += Math.floor(rng.next() * 15) + 5) {
-    // Check if this minute should have a player chance
-    const hasPlayerChance = playerChanceMinutes.includes(min);
+    // Check if we've passed any player chance minutes that haven't been used yet
+    const pendingChances = playerChanceMinutes.filter(
+      chanceMin => chanceMin <= min && chanceMin >= 1 && chanceMin <= 45 && !usedChanceMinutes.has(chanceMin)
+    );
     
-    if (hasPlayerChance) {
+    if (pendingChances.length > 0) {
+      // Add the first pending chance
+      const chanceMin = pendingChances[0];
       events.push({
-        minute: min,
+        minute: chanceMin,
         type: 'chance',
         description: `${player.name} with a chance!`,
         playerInvolved: true,
       });
+      usedChanceMinutes.add(chanceMin);
       playerChancesGenerated++;
     } else if (rng.next() > 0.7) {
       // Other team chances and goals
@@ -312,16 +320,21 @@ export function simulateMatch(
 
   // Simulate second half
   for (let min = 46; min <= 90; min += Math.floor(rng.next() * 15) + 5) {
-    // Check if this minute should have a player chance
-    const hasPlayerChance = playerChanceMinutes.includes(min);
+    // Check if we've passed any player chance minutes that haven't been used yet
+    const pendingChances = playerChanceMinutes.filter(
+      chanceMin => chanceMin <= min && chanceMin >= 46 && chanceMin <= 90 && !usedChanceMinutes.has(chanceMin)
+    );
     
-    if (hasPlayerChance) {
+    if (pendingChances.length > 0) {
+      // Add the first pending chance
+      const chanceMin = pendingChances[0];
       events.push({
-        minute: min,
+        minute: chanceMin,
         type: 'chance',
         description: `${player.name} with a chance!`,
         playerInvolved: true,
       });
+      usedChanceMinutes.add(chanceMin);
       playerChancesGenerated++;
     } else if (rng.next() > 0.7) {
       // Other team chances and goals
@@ -353,15 +366,16 @@ export function simulateMatch(
     }
   }
 
-  // Injury time player chance if scheduled
+  // Injury time player chances if scheduled
   playerChanceMinutes.forEach(min => {
-    if (min > 90) {
+    if (min > 90 && !usedChanceMinutes.has(min)) {
       events.push({
         minute: min,
         type: 'chance',
         description: `Last gasp chance for ${player.name}!`,
         playerInvolved: true,
       });
+      usedChanceMinutes.add(min);
       playerChancesGenerated++;
     }
   });

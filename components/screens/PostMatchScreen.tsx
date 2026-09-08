@@ -8,8 +8,38 @@ interface PostMatchScreenProps {
 }
 
 export default function PostMatchScreen({ gameState, setGameState }: PostMatchScreenProps) {
-  const matchState = gameState.matchState!;
-  const playerClub = getClubById(gameState.player.currentClubId)!;
+  // Defensive: ensure matchState exists
+  if (!gameState.matchState) {
+    return (
+      <div className="screen post-match-screen">
+        <div className="screen-header">
+          <h2>MATCH ERROR</h2>
+        </div>
+        <p>Match data unavailable.</p>
+        <button className="menu-btn primary" onClick={() => setGameState({...gameState, gameScreen: 'start'})}>
+          RETURN TO MENU
+        </button>
+      </div>
+    );
+  }
+
+  const matchState = gameState.matchState;
+  const playerClub = getClubById(gameState.player.currentClubId);
+
+  // Defensive: if club lookup fails, provide escape hatch
+  if (!playerClub) {
+    return (
+      <div className="screen post-match-screen">
+        <div className="screen-header">
+          <h2>ERROR</h2>
+        </div>
+        <p>Club data unavailable.</p>
+        <button className="menu-btn primary" onClick={() => setGameState({...gameState, gameScreen: 'start'})}>
+          RETURN TO MENU
+        </button>
+      </div>
+    );
+  }
 
   const playerScore = matchState.isPlayerHome ? matchState.homeScore : matchState.awayScore;
   const opponentScore = matchState.isPlayerHome ? matchState.awayScore : matchState.homeScore;
@@ -46,6 +76,14 @@ export default function PostMatchScreen({ gameState, setGameState }: PostMatchSc
         gameScreen: 'weekly-briefing',
       });
     }
+  };
+
+  const handleReturnToMenu = () => {
+    setGameState({
+      ...gameState,
+      matchState: null,
+      gameScreen: 'start',
+    });
   };
 
   const getResultClass = () => {
@@ -130,9 +168,14 @@ export default function PostMatchScreen({ gameState, setGameState }: PostMatchSc
         </div>
       </div>
 
-      <button className="menu-btn primary" onClick={handleContinue}>
-        CONTINUE
-      </button>
+      <div className="post-match-actions">
+        <button className="menu-btn primary" onClick={handleContinue}>
+          CONTINUE TO NEXT WEEK
+        </button>
+        <button className="menu-btn secondary" onClick={handleReturnToMenu}>
+          RETURN TO MENU
+        </button>
+      </div>
     </div>
   );
 }

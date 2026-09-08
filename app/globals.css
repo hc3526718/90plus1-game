@@ -948,6 +948,13 @@ body {
   color: #d1d5db;
 }
 
+.post-match-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
 /* Transfer Decision Screen */
 .transfer-offer-card {
   background: rgba(0, 0, 0, 0.3);
