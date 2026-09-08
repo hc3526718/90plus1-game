@@ -34,36 +34,79 @@ export default function MinigameScreen({ gameState, setGameState, onReturnToMenu
     const speed = isInjuryTime ? 0.03 : 0.02; // Faster in injury time
 
     const animate = () => {
-      // Clear canvas
-      ctx.fillStyle = '#1a4d2e';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Sky gradient (Flash-era)
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 150);
+      skyGrad.addColorStop(0, '#4a90e2');
+      skyGrad.addColorStop(1, '#2a5a8a');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, 150);
 
-      // Draw pitch perspective lines (simple)
-      ctx.strokeStyle = '#2d5a3d';
+      // Grass pitch with perspective gradient
+      const grassGrad = ctx.createLinearGradient(0, 150, 0, canvas.height);
+      grassGrad.addColorStop(0, '#2d6b2d');
+      grassGrad.addColorStop(0.5, '#1a4d1a');
+      grassGrad.addColorStop(1, '#2d6b2d');
+      ctx.fillStyle = grassGrad;
+      ctx.fillRect(0, 150, canvas.width, canvas.height - 150);
+
+      // Pitch perspective lines (rear view)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(150, canvas.height);
-      ctx.lineTo(0, 0);
+      ctx.lineTo(0, 100);
       ctx.stroke();
       
       ctx.beginPath();
       ctx.moveTo(450, canvas.height);
-      ctx.lineTo(canvas.width, 0);
+      ctx.lineTo(canvas.width, 100);
       ctx.stroke();
 
-      // Draw goal
-      ctx.fillStyle = '#444';
-      ctx.fillRect(150, 50, 300, 200);
+      // Crowd silhouettes (chunky Flash style)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      for (let i = 0; i < 20; i++) {
+        const x = 10 + i * 29;
+        const headSize = 10 + Math.sin(i * 0.5) * 3;
+        ctx.fillRect(x, 20, headSize, headSize);
+        ctx.fillRect(x + headSize/4, 30, headSize/2, 12);
+      }
+
+      // Goal structure with depth
+      // Back net support
+      ctx.fillStyle = '#555';
+      ctx.fillRect(145, 45, 310, 210);
       
+      // Net pattern
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      for (let x = 150; x < 450; x += 30) {
+        ctx.beginPath();
+        ctx.moveTo(x, 50);
+        ctx.lineTo(x, 250);
+        ctx.stroke();
+      }
+      for (let y = 50; y < 250; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(150, y);
+        ctx.lineTo(450, y);
+        ctx.stroke();
+      }
+      
+      // Goal frame (main posts)
       ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 5;
       ctx.strokeRect(150, 50, 300, 200);
 
-      // Draw goal posts
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(148, 50, 4, 200);
-      ctx.fillRect(448, 50, 4, 200);
-      ctx.fillRect(150, 48, 300, 4);
+      // Posts with depth/shadow
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(148, 50, 6, 200); // Left post
+      ctx.fillRect(446, 50, 6, 200); // Right post
+      ctx.fillRect(150, 48, 300, 6); // Crossbar
+      
+      // Post shadows
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(154, 54, 3, 196);
+      ctx.fillRect(452, 54, 3, 196);
 
       // Draw player silhouette (rear view)
       if (!hasShot) {
@@ -88,7 +131,7 @@ export default function MinigameScreen({ gameState, setGameState, onReturnToMenu
       ctx.fill();
       ctx.stroke();
 
-      // Draw power meter
+      // Draw power meter (chunky Flash UI)
       if (!hasShot && isPowerBuilding) {
         // Update power
         power += direction * speed;
@@ -101,25 +144,35 @@ export default function MinigameScreen({ gameState, setGameState, onReturnToMenu
         }
         setPowerLevel(power);
 
-        // Draw power bar
-        ctx.fillStyle = '#333';
-        ctx.fillRect(50, canvas.height - 50, 200, 30);
+        // Power bar background
+        ctx.fillStyle = '#222';
+        ctx.fillRect(45, canvas.height - 55, 210, 40);
+        ctx.strokeStyle = '#4a90e2';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(45, canvas.height - 55, 210, 40);
         
+        // Power fill with gradient
         const powerColor = power > 0.8 ? '#ff4444' : power > 0.5 ? '#ffaa00' : '#44ff44';
-        ctx.fillStyle = powerColor;
+        const powerEndColor = power > 0.8 ? '#cc0000' : power > 0.5 ? '#ff8800' : '#00cc00';
+        const powerGrad = ctx.createLinearGradient(50, 0, 50 + 200 * power, 0);
+        powerGrad.addColorStop(0, powerColor);
+        powerGrad.addColorStop(1, powerEndColor);
+        ctx.fillStyle = powerGrad;
         ctx.fillRect(50, canvas.height - 50, 200 * power, 30);
-        
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(50, canvas.height - 50, 200, 30);
 
-        // Sweet spot indicator
-        ctx.strokeStyle = '#fff';
+        // Sweet spot indicator (green zone)
+        ctx.strokeStyle = '#00ff00';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(150, canvas.height - 50);
-        ctx.lineTo(150, canvas.height - 20);
+        ctx.moveTo(150, canvas.height - 55);
+        ctx.lineTo(150, canvas.height - 15);
         ctx.stroke();
+
+        // Power label
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('POWER', 150, canvas.height - 60);
       }
 
       // Instructions

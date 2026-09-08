@@ -36,17 +36,62 @@ export default function SkillTrialsScreen({ gameState, setGameState, onReturnToM
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Power bar animation
+    // 2.5D Flash-era pitch animation
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw goal posts (rear view)
+      // Sky gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 150);
+      skyGrad.addColorStop(0, '#4a90e2');
+      skyGrad.addColorStop(1, '#2a5a8a');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, 150);
+
+      // Grass pitch with perspective
+      const grassGrad = ctx.createLinearGradient(0, 150, 0, 270);
+      grassGrad.addColorStop(0, '#2d6b2d');
+      grassGrad.addColorStop(1, '#1a4d1a');
+      ctx.fillStyle = grassGrad;
+      ctx.fillRect(0, 150, canvas.width, 120);
+
+      // Pitch lines (perspective)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 2;
+      // Goal area box
+      ctx.strokeRect(150, 180, 300, 80);
+      // 6-yard box
+      ctx.strokeRect(220, 210, 160, 50);
+
+      // Crowd silhouettes behind goal (chunky Flash style)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      for (let i = 0; i < 20; i++) {
+        const x = 30 + i * 27;
+        const headSize = 12 + Math.sin(i) * 3;
+        // Head
+        ctx.fillRect(x, 25, headSize, headSize);
+        // Body
+        ctx.fillRect(x + headSize/4, 37, headSize/2, 15);
+      }
+
+      // Goal structure (rear view with depth)
+      // Back support bars
+      ctx.fillStyle = '#888';
+      ctx.fillRect(45, 45, 8, 210); // Left back post
+      ctx.fillRect(547, 45, 8, 210); // Right back post
+      ctx.fillRect(45, 45, 510, 8); // Back crossbar
+
+      // Main goalposts (front, brighter)
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(50, 50, 10, 200); // Left post
       ctx.fillRect(540, 50, 10, 200); // Right post
       ctx.fillRect(50, 50, 500, 10); // Crossbar
 
-      // Draw net pattern
+      // Post shadows for depth
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(60, 55, 4, 195);
+      ctx.fillRect(550, 55, 4, 195);
+
+      // Net pattern (diamond mesh)
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 1;
       for (let x = 60; x < 540; x += 40) {
@@ -62,14 +107,26 @@ export default function SkillTrialsScreen({ gameState, setGameState, onReturnToM
         ctx.stroke();
       }
 
-      // Draw power bar
-      ctx.fillStyle = '#333';
-      ctx.fillRect(200, 280, 200, 30);
+      // Power bar (chunky Flash UI)
+      ctx.fillStyle = '#222';
+      ctx.fillRect(195, 275, 210, 40);
+      ctx.strokeStyle = '#4a90e2';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(195, 275, 210, 40);
       
-      // Power level indicator
+      // Power level indicator with gradient
       const powerColor = powerLevel < 30 ? '#ff4444' : powerLevel < 70 ? '#44ff44' : '#ff4444';
-      ctx.fillStyle = powerColor;
+      const powerGrad = ctx.createLinearGradient(200, 0, 200 + powerLevel * 2, 0);
+      powerGrad.addColorStop(0, powerColor);
+      powerGrad.addColorStop(1, powerLevel < 30 ? '#cc0000' : powerLevel < 70 ? '#00cc00' : '#cc0000');
+      ctx.fillStyle = powerGrad;
       ctx.fillRect(200, 280, powerLevel * 2, 30);
+
+      // Power bar label
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('POWER', 300, 270);
 
       if (isPowerBuilding && !hasShot) {
         setPowerLevel((prev) => {
