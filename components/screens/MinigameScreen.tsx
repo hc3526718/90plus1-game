@@ -162,7 +162,17 @@ export default function MinigameScreen({ gameState, setGameState }: MinigameScre
 
     // Update match state
     const matchState = { ...gameState.matchState! };
-    const lastEvent = matchState.events[matchState.events.length - 1];
+    
+    // Defensive: find the chance event we're responding to
+    // Look backwards from displayedUpTo to find the last player chance
+    let chanceMinute = 45; // Default fallback
+    for (let i = matchState.displayedUpTo - 1; i >= 0; i--) {
+      const event = matchState.events[i];
+      if (event && event.playerInvolved && event.type === 'chance') {
+        chanceMinute = event.minute;
+        break;
+      }
+    }
     
     if (result.success) {
       // Goal!
@@ -176,7 +186,7 @@ export default function MinigameScreen({ gameState, setGameState }: MinigameScre
       matchState.playerRating = Math.min(10, matchState.playerRating + 1.5);
       
       const newEvent: MatchEvent = {
-        minute: lastEvent.minute,
+        minute: chanceMinute,
         type: 'goal',
         description: `⚽ GOAL! ${gameState.player.name} ${result.quality === 'perfect' ? 'smashes it in!' : 'scores!'}`,
         playerInvolved: true,
@@ -186,7 +196,7 @@ export default function MinigameScreen({ gameState, setGameState }: MinigameScre
       matchState.playerRating = Math.max(1, matchState.playerRating - 0.5);
       
       const newEvent: MatchEvent = {
-        minute: lastEvent.minute,
+        minute: chanceMinute,
         type: 'miss',
         description: `${gameState.player.name} ${result.quality === 'poor' ? 'blazes it over!' : 'can\'t convert!'}`,
         playerInvolved: true,

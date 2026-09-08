@@ -9,19 +9,33 @@ interface MatchScreenProps {
 export default function MatchScreen({ gameState, setGameState }: MatchScreenProps) {
   const matchState = gameState.matchState!;
   
-  const [displayedEvents, setDisplayedEvents] = useState<MatchEvent[]>(
-    () => matchState.events.slice(0, matchState.displayedUpTo)
+  // Defensive: ensure displayedUpTo is within bounds
+  const safeDisplayedUpTo = Math.min(
+    Math.max(0, matchState.displayedUpTo),
+    matchState.events.length
   );
-  const [currentEventIndex, setCurrentEventIndex] = useState(matchState.displayedUpTo);
+  
+  const [displayedEvents, setDisplayedEvents] = useState<MatchEvent[]>(
+    () => matchState.events.slice(0, safeDisplayedUpTo).filter(e => e !== undefined && e !== null)
+  );
+  const [currentEventIndex, setCurrentEventIndex] = useState(safeDisplayedUpTo);
   const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
-    if (!isPlaying || currentEventIndex >= matchState.events.length) {
+    // Defensive: check bounds and ensure we have events
+    if (!isPlaying || !matchState.events || currentEventIndex >= matchState.events.length) {
       setIsPlaying(false);
       return;
     }
 
     const nextEvent = matchState.events[currentEventIndex];
+    
+    // Defensive: ensure nextEvent exists before accessing properties
+    if (!nextEvent) {
+      console.warn(`Match event at index ${currentEventIndex} is undefined, skipping`);
+      setCurrentEventIndex(prev => prev + 1);
+      return;
+    }
     
     // Check if this is a player chance - pause for minigame
     if (nextEvent.playerInvolved && nextEvent.type === 'chance') {
@@ -100,15 +114,17 @@ export default function MatchScreen({ gameState, setGameState }: MatchScreenProp
       </div>
 
       <div className="commentary-feed">
-        {displayedEvents.map((event, index) => (
-          <div 
-            key={index} 
-            className={`commentary-line ${event.type} ${event.playerInvolved ? 'player-involved' : ''}`}
-          >
-            <span className="minute">{event.minute}'</span>
-            <span className="description">{event.description}</span>
-          </div>
-        ))}
+        {displayedEvents
+          .filter(event => event !== undefined && event !== null)
+          .map((event, index) => (
+            <div 
+              key={index} 
+              className={`commentary-line ${event.type || 'commentary'} ${event.playerInvolved ? 'player-involved' : ''}`}
+            >
+              <span className="minute">{event.minute || 0}'</span>
+              <span className="description">{event.description || 'Event'}</span>
+            </div>
+          ))}
       </div>
 
       {allEventsDisplayed && (
