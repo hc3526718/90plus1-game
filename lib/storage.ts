@@ -77,7 +77,7 @@ export function validateSave(state: GameState): boolean {
     if (!state.player.name || !state.player.attributes) return false;
     
     // Check gameScreen is valid
-    const validScreens = ['create-player', 'weekly-briefing', 'day-planner', 'match', 'minigame', 'post-match', 'transfer-decision', 'start'];
+    const validScreens = ['start', 'settings', 'create-player', 'skill-trials', 'contract-offers', 'weekly-briefing', 'day-planner', 'match', 'minigame', 'post-match', 'transfer-decision', 'lifestyle-shop'];
     if (!validScreens.includes(state.gameScreen)) return false;
     
     // If in post-match, ensure matchState exists
