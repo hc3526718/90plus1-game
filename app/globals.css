@@ -60,6 +60,7 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   padding: 2rem;
   animation: fadeIn 0.3s ease-in;
+  position: relative;
 }
 
 @keyframes fadeIn {
@@ -71,6 +72,30 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Global menu escape button */
+.menu-escape {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 100;
+}
+
+.menu-escape:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
 }
 
 .screen-header {
@@ -119,6 +144,14 @@ body {
   color: rgba(255, 255, 255, 0.9);
   letter-spacing: 3px;
   text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.game-tagline {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  letter-spacing: 1px;
 }
 
 .menu-buttons {
@@ -133,6 +166,13 @@ body {
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
+  text-align: center;
+}
+
+.credits .version {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* Buttons */
@@ -180,6 +220,15 @@ body {
 
 .menu-btn.secondary:hover:not(:disabled) {
   background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+}
+
+.menu-btn.danger {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+}
+
+.menu-btn.danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
 }
 
 .shoot-btn {

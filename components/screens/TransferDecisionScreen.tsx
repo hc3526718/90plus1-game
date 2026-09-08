@@ -4,9 +4,10 @@ import { getClubById } from '@/lib/gameData';
 interface TransferDecisionScreenProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  onReturnToMenu?: () => void;
 }
 
-export default function TransferDecisionScreen({ gameState, setGameState }: TransferDecisionScreenProps) {
+export default function TransferDecisionScreen({ gameState, setGameState, onReturnToMenu }: TransferDecisionScreenProps) {
   const offer = gameState.transferOffers[0]; // For v1, just handle first offer
   const currentClub = getClubById(gameState.player.currentClubId)!;
   const offeringClub = getClubById(offer.fromClubId)!;
@@ -47,6 +48,11 @@ export default function TransferDecisionScreen({ gameState, setGameState }: Tran
 
   return (
     <div className="screen transfer-decision-screen">
+      {onReturnToMenu && (
+        <button className="menu-escape" onClick={onReturnToMenu}>
+          ← MENU
+        </button>
+      )}
       <div className="screen-header">
         <h2>📋 TRANSFER OFFER</h2>
       </div>

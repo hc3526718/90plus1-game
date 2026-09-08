@@ -5,9 +5,10 @@ import { evaluateMinigameSuccess } from '@/lib/gameEngine';
 interface MinigameScreenProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  onReturnToMenu?: () => void;
 }
 
-export default function MinigameScreen({ gameState, setGameState }: MinigameScreenProps) {
+export default function MinigameScreen({ gameState, setGameState, onReturnToMenu }: MinigameScreenProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [powerLevel, setPowerLevel] = useState(0);
   const [isPowerBuilding, setIsPowerBuilding] = useState(true);
@@ -229,6 +230,11 @@ export default function MinigameScreen({ gameState, setGameState }: MinigameScre
 
   return (
     <div className="screen minigame-screen">
+      {onReturnToMenu && (
+        <button className="menu-escape" onClick={onReturnToMenu}>
+          ← MENU
+        </button>
+      )}
       <div className="minigame-header">
         <h2>{minigame.type === 'penalty' ? '⚽ PENALTY!' : '⚽ YOUR CHANCE!'}</h2>
       </div>

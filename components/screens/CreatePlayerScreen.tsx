@@ -5,9 +5,10 @@ import { createNewPlayer, createInitialWeek } from '@/lib/gameEngine';
 interface CreatePlayerScreenProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  onReturnToMenu?: () => void;
 }
 
-export default function CreatePlayerScreen({ gameState, setGameState }: CreatePlayerScreenProps) {
+export default function CreatePlayerScreen({ gameState, setGameState, onReturnToMenu }: CreatePlayerScreenProps) {
   const [name, setName] = useState('');
   const [foot, setFoot] = useState<PreferredFoot>('right');
 
@@ -25,6 +26,11 @@ export default function CreatePlayerScreen({ gameState, setGameState }: CreatePl
 
   return (
     <div className="screen create-player-screen">
+      {onReturnToMenu && (
+        <button className="menu-escape" onClick={onReturnToMenu}>
+          ← MENU
+        </button>
+      )}
       <div className="screen-header">
         <h2>CREATE YOUR PLAYER</h2>
       </div>

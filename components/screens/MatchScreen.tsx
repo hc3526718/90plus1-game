@@ -4,9 +4,10 @@ import { GameState, MatchEvent } from '@/lib/types';
 interface MatchScreenProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  onReturnToMenu?: () => void;
 }
 
-export default function MatchScreen({ gameState, setGameState }: MatchScreenProps) {
+export default function MatchScreen({ gameState, setGameState, onReturnToMenu }: MatchScreenProps) {
   const matchState = gameState.matchState!;
   
   // Defensive: ensure displayedUpTo is within bounds
@@ -86,6 +87,11 @@ export default function MatchScreen({ gameState, setGameState }: MatchScreenProp
 
   return (
     <div className="screen match-screen">
+      {onReturnToMenu && (
+        <button className="menu-escape" onClick={onReturnToMenu}>
+          ← MENU
+        </button>
+      )}
       <div className="match-header">
         <div className="team-score">
           <span className="team-name">{matchState.homeTeam}</span>

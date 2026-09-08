@@ -5,9 +5,18 @@ import { getClubById } from '@/lib/gameData';
 interface PostMatchScreenProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  onReturnToMenu?: () => void;
 }
 
-export default function PostMatchScreen({ gameState, setGameState }: PostMatchScreenProps) {
+export default function PostMatchScreen({ gameState, setGameState, onReturnToMenu }: PostMatchScreenProps) {
+  const handleReturnToMenuSafe = () => {
+    if (onReturnToMenu) {
+      onReturnToMenu();
+    } else {
+      setGameState({...gameState, matchState: null, gameScreen: 'start'});
+    }
+  };
+
   // Defensive: ensure matchState exists
   if (!gameState.matchState) {
     return (
@@ -16,7 +25,7 @@ export default function PostMatchScreen({ gameState, setGameState }: PostMatchSc
           <h2>MATCH ERROR</h2>
         </div>
         <p>Match data unavailable.</p>
-        <button className="menu-btn primary" onClick={() => setGameState({...gameState, gameScreen: 'start'})}>
+        <button className="menu-btn primary" onClick={handleReturnToMenuSafe}>
           RETURN TO MENU
         </button>
       </div>
@@ -34,7 +43,7 @@ export default function PostMatchScreen({ gameState, setGameState }: PostMatchSc
           <h2>ERROR</h2>
         </div>
         <p>Club data unavailable.</p>
-        <button className="menu-btn primary" onClick={() => setGameState({...gameState, gameScreen: 'start'})}>
+        <button className="menu-btn primary" onClick={handleReturnToMenuSafe}>
           RETURN TO MENU
         </button>
       </div>
@@ -79,11 +88,15 @@ export default function PostMatchScreen({ gameState, setGameState }: PostMatchSc
   };
 
   const handleReturnToMenu = () => {
-    setGameState({
-      ...gameState,
-      matchState: null,
-      gameScreen: 'start',
-    });
+    if (onReturnToMenu) {
+      onReturnToMenu();
+    } else {
+      setGameState({
+        ...gameState,
+        matchState: null,
+        gameScreen: 'start',
+      });
+    }
   };
 
   const getResultClass = () => {
@@ -116,6 +129,11 @@ export default function PostMatchScreen({ gameState, setGameState }: PostMatchSc
 
   return (
     <div className="screen post-match-screen">
+      {onReturnToMenu && (
+        <button className="menu-escape" onClick={handleReturnToMenu}>
+          ← MENU
+        </button>
+      )}
       <div className="screen-header">
         <h2>FULL TIME</h2>
       </div>

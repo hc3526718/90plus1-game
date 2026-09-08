@@ -6,9 +6,10 @@ import { generateDayActivities, getRestActivity } from '@/lib/activityDeck';
 interface DayPlannerScreenProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  onReturnToMenu?: () => void;
 }
 
-export default function DayPlannerScreen({ gameState, setGameState }: DayPlannerScreenProps) {
+export default function DayPlannerScreen({ gameState, setGameState, onReturnToMenu }: DayPlannerScreenProps) {
   const [currentDay, setCurrentDay] = useState(0);
   const [activityMessage, setActivityMessage] = useState('');
   const [gamblingMessage, setGamblingMessage] = useState('');
@@ -142,6 +143,11 @@ export default function DayPlannerScreen({ gameState, setGameState }: DayPlanner
 
   return (
     <div className="screen day-planner-screen">
+      {onReturnToMenu && (
+        <button className="menu-escape" onClick={onReturnToMenu}>
+          ← MENU
+        </button>
+      )}
       <div className="screen-header">
         <h2>{getDayName(currentDay)}</h2>
         <p>Week {currentWeek.weekNumber} - Day {currentDay + 1} - {currentWeek.seasonPhase.replace('-', ' ')}</p>

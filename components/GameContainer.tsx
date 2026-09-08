@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { GameState } from '@/lib/types';
 import { createNewPlayer, createInitialWeek, generateTeammates } from '@/lib/gameEngine';
 import { CLUBS } from '@/lib/gameData';
-import { saveGame, loadGame, hasSavedGame } from '@/lib/storage';
+import { saveGame, loadGame, hasSavedGame, deleteSave, validateSave } from '@/lib/storage';
 
 import StartScreen from './screens/StartScreen';
 import CreatePlayerScreen from './screens/CreatePlayerScreen';
@@ -21,27 +21,23 @@ export default function GameContainer() {
   const [hasSave, setHasSave] = useState(false);
 
   useEffect(() => {
-    // Check for saved game on mount (client-side only)
+    // NEVER auto-load on boot - always show title screen
+    // User must explicitly click Continue
     const checkSave = hasSavedGame();
     setHasSave(checkSave);
-    
-    if (checkSave) {
-      const loaded = loadGame();
-      if (loaded) {
-        setGameState(loaded);
-      }
-    }
     setInitialized(true);
   }, []);
 
   useEffect(() => {
     // Auto-save whenever game state changes
-    if (gameState && initialized) {
+    if (gameState && initialized && gameState.gameScreen !== 'start') {
       saveGame(gameState);
     }
   }, [gameState, initialized]);
 
   const startNewGame = () => {
+    // Clear any old saves before starting fresh
+    deleteSave();
     setGameState({
       player: createNewPlayer('', 'right'),
       clubs: CLUBS,
@@ -54,13 +50,31 @@ export default function GameContainer() {
       minigameState: null,
       gameScreen: 'create-player',
     });
+    setHasSave(false);
   };
 
   const continueGame = () => {
     const loaded = loadGame();
-    if (loaded) {
+    if (loaded && validateSave(loaded)) {
       setGameState(loaded);
+    } else {
+      // Save is corrupted - show error and stay on title
+      alert('Save data is corrupted. Please start a new game.');
+      deleteSave();
+      setHasSave(false);
     }
+  };
+
+  const handleDeleteSave = () => {
+    if (confirm('Delete your saved game? This cannot be undone.')) {
+      deleteSave();
+      setHasSave(false);
+      setGameState(null);
+    }
+  };
+
+  const handleReturnToMenu = () => {
+    setGameState(null);
   };
 
   if (!initialized) {
@@ -77,28 +91,38 @@ export default function GameContainer() {
         hasSave={hasSave}
         onNewGame={startNewGame}
         onContinue={continueGame}
+        onDeleteSave={handleDeleteSave}
       />
     );
   }
 
   const renderScreen = () => {
+    // Add onReturnToMenu prop to all screens for global escape
+    const screenProps = {
+      gameState,
+      setGameState,
+      onReturnToMenu: handleReturnToMenu,
+    };
+
     switch (gameState.gameScreen) {
+      case 'start':
+        return <StartScreen hasSave={hasSave} onNewGame={startNewGame} onContinue={continueGame} onDeleteSave={handleDeleteSave} />;
       case 'create-player':
-        return <CreatePlayerScreen gameState={gameState} setGameState={setGameState} />;
+        return <CreatePlayerScreen {...screenProps} />;
       case 'weekly-briefing':
-        return <WeeklyBriefingScreen gameState={gameState} setGameState={setGameState} />;
+        return <WeeklyBriefingScreen {...screenProps} />;
       case 'day-planner':
-        return <DayPlannerScreen gameState={gameState} setGameState={setGameState} />;
+        return <DayPlannerScreen {...screenProps} />;
       case 'match':
-        return <MatchScreen gameState={gameState} setGameState={setGameState} />;
+        return <MatchScreen {...screenProps} />;
       case 'minigame':
-        return <MinigameScreen gameState={gameState} setGameState={setGameState} />;
+        return <MinigameScreen {...screenProps} />;
       case 'post-match':
-        return <PostMatchScreen gameState={gameState} setGameState={setGameState} />;
+        return <PostMatchScreen {...screenProps} />;
       case 'transfer-decision':
-        return <TransferDecisionScreen gameState={gameState} setGameState={setGameState} />;
+        return <TransferDecisionScreen {...screenProps} />;
       default:
-        return <StartScreen hasSave={false} onNewGame={startNewGame} onContinue={() => {}} />;
+        return <StartScreen hasSave={hasSave} onNewGame={startNewGame} onContinue={continueGame} onDeleteSave={handleDeleteSave} />;
     }
   };
 

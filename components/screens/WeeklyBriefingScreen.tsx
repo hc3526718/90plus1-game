@@ -4,9 +4,10 @@ import { getClubById } from '@/lib/gameData';
 interface WeeklyBriefingScreenProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  onReturnToMenu?: () => void;
 }
 
-export default function WeeklyBriefingScreen({ gameState, setGameState }: WeeklyBriefingScreenProps) {
+export default function WeeklyBriefingScreen({ gameState, setGameState, onReturnToMenu }: WeeklyBriefingScreenProps) {
   const { player, currentWeek, partner } = gameState;
   const playerClub = getClubById(player.currentClubId);
   const opponent = getClubById(currentWeek.opponentId);
@@ -34,6 +35,11 @@ export default function WeeklyBriefingScreen({ gameState, setGameState }: Weekly
 
   return (
     <div className="screen briefing-screen">
+      {onReturnToMenu && (
+        <button className="menu-escape" onClick={onReturnToMenu}>
+          ← MENU
+        </button>
+      )}
       <div className="screen-header">
         <h2>WEEK {currentWeek.weekNumber} BRIEFING</h2>
         <p className="club-name">{playerClub?.name}</p>
