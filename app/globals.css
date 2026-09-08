@@ -1201,3 +1201,208 @@ body {
 .commentary-feed::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
+
+/* JfG Triple Meters */
+.triple-meters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 3px solid #ffd700;
+  border-radius: 12px;
+}
+
+.meter-card {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.meter-card:hover {
+  border-color: #ffd700;
+  transform: scale(1.05);
+}
+
+.meter-card.jfg-skill {
+  border-color: #4a90e2;
+}
+
+.meter-card.jfg-manager {
+  border-color: #ff6b6b;
+}
+
+.meter-card.jfg-media {
+  border-color: #ffd700;
+}
+
+.meter-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.meter-label {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 0.8rem;
+}
+
+.meter-bar {
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 0.5rem;
+}
+
+.meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #44ff44 0%, #ffd700 50%, #ff6b6b 100%);
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.meter-value {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: bold;
+}
+
+/* Skill Trials Screen */
+.skill-trials-screen .trial-intro {
+  text-align: center;
+  padding: 2rem;
+}
+
+.skill-trials-screen .trial-intro h3 {
+  font-size: 2rem;
+  color: #ffd700;
+  margin-bottom: 1rem;
+}
+
+.skill-trials-screen .trial-info {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 1.5rem 0;
+}
+
+.skill-trials-screen .trial-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.skill-trials-screen .trial-stats {
+  text-align: center;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.skill-trials-screen .trial-stats p {
+  margin: 0.5rem 0;
+}
+
+.skill-trials-screen .trial-result {
+  text-align: center;
+  padding: 2rem;
+}
+
+.skill-trials-screen .trial-result h3 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Contract Offers Screen */
+.contract-offers-screen .trial-summary {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.contract-offers-screen .trial-summary h3 {
+  color: #ffd700;
+  margin-bottom: 1rem;
+}
+
+.contract-offers-screen .trial-result-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.contract-offers-screen .trial-result-item .pass {
+  color: #44ff44;
+}
+
+.contract-offers-screen .trial-result-item .fail {
+  color: #ff4444;
+}
+
+.contract-offers-screen .offers-container {
+  margin-top: 2rem;
+}
+
+.contract-offers-screen .offers-container h3 {
+  color: #ffd700;
+  margin-bottom: 1.5rem;
+}
+
+.contract-offers-screen .offer-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 3px solid #4a90e2;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+}
+
+.contract-offers-screen .offer-card:hover {
+  border-color: #ffd700;
+  transform: scale(1.02);
+}
+
+.contract-offers-screen .offer-card h4 {
+  font-size: 1.5rem;
+  color: #ffd700;
+  margin-bottom: 0.5rem;
+}
+
+.contract-offers-screen .offer-tier {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.5rem;
+}
+
+.contract-offers-screen .offer-wage {
+  font-size: 1.3rem;
+  color: #44ff44;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.contract-offers-screen .poor-performance {
+  background: rgba(255, 68, 68, 0.2);
+  border: 2px solid #ff4444;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.contract-offers-screen .poor-performance p {
+  color: #ff4444;
+  font-size: 1.1rem;
+  font-weight: bold;
+}

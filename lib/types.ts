@@ -16,8 +16,12 @@ export interface Player {
   attributes: PlayerAttributes;
   energy: number;         // 0-100
   form: number;           // 0-100
-  managerTrust: number;   // 0-100
-  mediaHeat: number;      // 0-100
+  
+  // JfG Triple Meters (all 0-100)
+  skill: number;          // Derived from attributes average, grows with training
+  managerRating: number;  // Manager approval (replaces managerTrust)
+  mediaHeat: number;      // Paparazzi/fame meter
+  
   currentClubId: string;
   currentTier: number;    // 0 = non-league, 1 = league two, 2 = league one, etc.
   careerStats: {
@@ -29,6 +33,14 @@ export interface Player {
   weeklyWage: number;     // Current wage
   consecutiveTraining: number;  // Track training spam for diminishing returns/injury
   recentPurchases: string[];    // Track lifestyle purchases for unlocks
+  
+  // Lifestyle assets
+  car: string | null;     // One car at a time (e.g. 'old-banger', 'sports-car')
+  house: string | null;   // One house at a time (e.g. 'flat', 'semi', 'mansion')
+  
+  // Discipline
+  suspensionWeeks: number;  // Weeks remaining on suspension
+  finesOwed: number;        // Money owed in fines
 }
 
 export interface Club {
@@ -40,8 +52,10 @@ export interface Club {
 
 export interface Partner {
   name: string;
-  mood: number;           // 0-100
+  rating: number;         // 0-100 (attractiveness/status)
+  mood: number;           // 0-100 (current happiness)
   relationshipStrength: number; // 0-100
+  daysWithoutAttention: number; // Tracks neglect, may dump you
 }
 
 export interface Teammate {
@@ -150,17 +164,36 @@ export interface TransferOffer {
   tier: number;
 }
 
+export interface Agent {
+  name: string;
+  tier: number;           // 1-5 (weak to super-agent)
+  satisfaction: number;   // 0-100
+  wageBonus: number;      // Percentage wage boost (e.g. 0.1 = 10%)
+}
+
+// Skill Trials - backyard onboarding minigames
+export type TrialType = 'volleys' | 'penalties' | 'snap-shots' | 'passing' | 'heading' | 'turn-and-shoot';
+
+export interface TrialResult {
+  type: TrialType;
+  score: number;          // Out of 10
+  passed: boolean;        // Needed 5+ to pass
+}
+
 export interface GameState {
   player: Player;
   clubs: Club[];
   currentWeek: Week;
   partner: Partner | null;
   teammates: Teammate[];
-  agent: {
-    satisfaction: number; // 0-100
-  };
+  agent: Agent;
   transferOffers: TransferOffer[];
   matchState: MatchState | null;
   minigameState: MinigameState | null;
-  gameScreen: 'start' | 'create-player' | 'weekly-briefing' | 'day-planner' | 'match' | 'minigame' | 'post-match' | 'transfer-decision';
+  
+  // Onboarding trials
+  trialResults: TrialResult[];
+  trialsCompleted: boolean;
+  
+  gameScreen: 'start' | 'skill-trials' | 'contract-offers' | 'create-player' | 'weekly-briefing' | 'day-planner' | 'match' | 'minigame' | 'post-match' | 'transfer-decision';
 }

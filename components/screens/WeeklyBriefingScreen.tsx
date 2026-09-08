@@ -46,6 +46,37 @@ export default function WeeklyBriefingScreen({ gameState, setGameState, onReturn
       </div>
 
       <div className="briefing-content">
+        {/* JfG Triple Meters - The Core 3 */}
+        <div className="triple-meters">
+          <div className="meter-card jfg-skill">
+            <div className="meter-icon">⚽</div>
+            <div className="meter-label">SKILL</div>
+            <div className="meter-bar">
+              <div className="meter-fill" style={{ width: `${player.skill}%` }} />
+            </div>
+            <div className="meter-value">{player.skill}/100</div>
+          </div>
+
+          <div className="meter-card jfg-manager">
+            <div className="meter-icon">👔</div>
+            <div className="meter-label">MANAGER</div>
+            <div className="meter-bar">
+              <div className="meter-fill" style={{ width: `${player.managerRating}%` }} />
+            </div>
+            <div className="meter-value">{player.managerRating}/100</div>
+          </div>
+
+          <div className="meter-card jfg-media">
+            <div className="meter-icon">📸</div>
+            <div className="meter-label">MEDIA</div>
+            <div className="meter-bar">
+              <div className="meter-fill" style={{ width: `${player.mediaHeat}%` }} />
+            </div>
+            <div className="meter-value">{player.mediaHeat}/100</div>
+          </div>
+        </div>
+
+        {/* Secondary stats */}
         <div className="stat-grid">
           <div className="stat-card">
             <div className="stat-label">Energy</div>
@@ -70,25 +101,13 @@ export default function WeeklyBriefingScreen({ gameState, setGameState, onReturn
           </div>
 
           <div className="stat-card">
-            <div className="stat-label">Manager Trust</div>
-            <div className="stat-bar">
-              <div 
-                className="stat-fill trust" 
-                style={{ width: `${player.managerTrust}%` }}
-              />
-            </div>
-            <div className="stat-value">{getTrustLabel(player.managerTrust)}</div>
+            <div className="stat-label">Money</div>
+            <div className="stat-value">£{player.money}</div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-label">Media Heat</div>
-            <div className="stat-bar">
-              <div 
-                className="stat-fill media" 
-                style={{ width: `${player.mediaHeat}%` }}
-              />
-            </div>
-            <div className="stat-value">{player.mediaHeat}/100</div>
+            <div className="stat-label">Weekly Wage</div>
+            <div className="stat-value">£{player.weeklyWage}</div>
           </div>
         </div>
 

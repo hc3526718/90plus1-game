@@ -20,7 +20,7 @@ export default function CreatePlayerScreen({ gameState, setGameState, onReturnTo
     setGameState({
       ...gameState,
       player,
-      gameScreen: 'weekly-briefing',
+      gameScreen: 'skill-trials', // JfG flow: name → trials → contracts → career
     });
   };
 

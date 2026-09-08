@@ -31,31 +31,59 @@ class SeededRandom {
 }
 
 export function createNewPlayer(name: string, preferredFoot: 'left' | 'right' | 'both'): Player {
+  const attributes = {
+    finishing: 8,
+    composure: 7,
+    pace: 10,
+    stamina: 12,
+    awareness: 6,
+  };
+  
+  // Calculate initial skill from attributes average
+  const skillAvg = (attributes.finishing + attributes.composure + attributes.pace + attributes.stamina + attributes.awareness) / 5;
+  const initialSkill = Math.round((skillAvg / 20) * 100); // Convert 1-20 scale to 0-100
+  
   return {
     name,
     preferredFoot,
-    attributes: {
-      finishing: 8,
-      composure: 7,
-      pace: 10,
-      stamina: 12,
-      awareness: 6,
-    },
+    attributes,
     energy: 100,
     form: 50,
-    managerTrust: 50,
+    
+    // JfG Triple Meters
+    skill: initialSkill,
+    managerRating: 50,
     mediaHeat: 20,
-    currentClubId: 'heath-united', // Start at first non-league club
+    
+    currentClubId: '', // Will be set after trials + contract offers
     currentTier: 0,
     careerStats: {
       appearances: 0,
       goals: 0,
       assists: 0,
     },
-    money: 1000, // Starting savings
-    weeklyWage: 200, // Non-league wages
+    money: 1000,
+    weeklyWage: 200,
     consecutiveTraining: 0,
     recentPurchases: [],
+    
+    // Lifestyle
+    car: null,
+    house: null,
+    
+    // Discipline
+    suspensionWeeks: 0,
+    finesOwed: 0,
+  };
+}
+
+export function createStarterAgent(): import('./types').Agent {
+  const agentNames = ['Barry Dodger', 'Mike Smooth', 'Tony Flash', 'Jimmy Deal'];
+  return {
+    name: agentNames[Math.floor(Math.random() * agentNames.length)],
+    tier: 1, // Start with weak agent
+    satisfaction: 50,
+    wageBonus: 0.05, // Tier 1 gives +5% wages
   };
 }
 
@@ -115,7 +143,7 @@ export function applyActivity(
     
     if (energy) newPlayer.energy = Math.max(0, Math.min(100, newPlayer.energy + energy));
     if (form) newPlayer.form = Math.max(0, Math.min(100, newPlayer.form + form));
-    if (trust) newPlayer.managerTrust = Math.max(0, Math.min(100, newPlayer.managerTrust + trust));
+    if (trust) newPlayer.managerRating = Math.max(0, Math.min(100, newPlayer.managerRating + trust));
     if (media) newPlayer.mediaHeat = Math.max(0, Math.min(100, newPlayer.mediaHeat + media));
     if (money) newPlayer.money += money;
     
@@ -168,12 +196,15 @@ export function applyActivity(
   
   // Partner activities: meet someone if don't have partner
   if (activity.category === 'partner' && !newPartner) {
+    const partnerName = PARTNER_NAMES[Math.floor(Math.random() * PARTNER_NAMES.length)];
     newPartner = {
-      name: PARTNER_NAMES[Math.floor(Math.random() * PARTNER_NAMES.length)],
+      name: partnerName,
+      rating: 50 + Math.floor(Math.random() * 30), // 50-80 initial rating
       mood: 60,
       relationshipStrength: 40,
+      daysWithoutAttention: 0,
     };
-    message = `You met ${newPartner.name}!`;
+    message = `You met ${partnerName}!`;
   }
   
   // Gambling: run the minigame
@@ -429,7 +460,7 @@ export function checkTransferOffers(player: Player): TransferOffer[] {
   const offers: TransferOffer[] = [];
   
   // If form and trust are high, chance of offers from higher tier
-  if (player.form > 70 && player.managerTrust > 60 && player.careerStats.goals > 5) {
+  if (player.form > 70 && player.managerRating > 60 && player.careerStats.goals > 5) {
     const higherTierClubs = CLUBS.filter(c => c.tier === player.currentTier + 1);
     
     if (higherTierClubs.length > 0 && Math.random() > 0.6) {
@@ -469,13 +500,13 @@ export function updatePlayerAfterMatch(
   // Update form based on performance
   if (matchState.playerRating >= 8) {
     newPlayer.form = Math.min(100, newPlayer.form + 15);
-    newPlayer.managerTrust = Math.min(100, newPlayer.managerTrust + 10);
+    newPlayer.managerRating = Math.min(100, newPlayer.managerRating + 10);
   } else if (matchState.playerRating >= 6.5) {
     newPlayer.form = Math.min(100, newPlayer.form + 5);
-    newPlayer.managerTrust = Math.min(100, newPlayer.managerTrust + 3);
+    newPlayer.managerRating = Math.min(100, newPlayer.managerRating + 3);
   } else {
     newPlayer.form = Math.max(0, newPlayer.form - 10);
-    newPlayer.managerTrust = Math.max(0, newPlayer.managerTrust - 5);
+    newPlayer.managerRating = Math.max(0, newPlayer.managerRating - 5);
   }
   
   // Result impact

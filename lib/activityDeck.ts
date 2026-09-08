@@ -392,7 +392,7 @@ function generateManagerAgentActivities(player: Player, phase: SeasonPhase): Act
   const activities: ActivityOption[] = [];
   
   // Manager meeting (if form/trust low)
-  if (player.form < 40 || player.managerTrust < 40) {
+  if (player.form < 40 || player.managerRating < 40) {
     if (Math.random() > 0.7) {
       activities.push({
         id: 'manager-meeting',

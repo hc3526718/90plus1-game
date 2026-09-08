@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { GameState } from '@/lib/types';
-import { createNewPlayer, createInitialWeek, generateTeammates } from '@/lib/gameEngine';
+import { createNewPlayer, createInitialWeek, generateTeammates, createStarterAgent } from '@/lib/gameEngine';
 import { CLUBS } from '@/lib/gameData';
 import { saveGame, loadGame, hasSavedGame, deleteSave, validateSave } from '@/lib/storage';
 
 import StartScreen from './screens/StartScreen';
 import CreatePlayerScreen from './screens/CreatePlayerScreen';
+import SkillTrialsScreen from './screens/SkillTrialsScreen';
+import ContractOffersScreen from './screens/ContractOffersScreen';
 import WeeklyBriefingScreen from './screens/WeeklyBriefingScreen';
 import DayPlannerScreen from './screens/DayPlannerScreen';
 import MatchScreen from './screens/MatchScreen';
@@ -41,14 +43,16 @@ export default function GameContainer() {
     setGameState({
       player: createNewPlayer('', 'right'),
       clubs: CLUBS,
-      currentWeek: createInitialWeek('heath-united', 1),
+      currentWeek: createInitialWeek('heath-united', 1), // Placeholder, will be recreated after contract
       partner: null,
       teammates: generateTeammates(5),
-      agent: { satisfaction: 50 },
+      agent: createStarterAgent(),
       transferOffers: [],
       matchState: null,
       minigameState: null,
-      gameScreen: 'create-player',
+      trialResults: [],
+      trialsCompleted: false,
+      gameScreen: 'create-player', // First: create player, then: skill-trials, then: contract-offers
     });
     setHasSave(false);
   };
@@ -109,6 +113,10 @@ export default function GameContainer() {
         return <StartScreen hasSave={hasSave} onNewGame={startNewGame} onContinue={continueGame} onDeleteSave={handleDeleteSave} />;
       case 'create-player':
         return <CreatePlayerScreen {...screenProps} />;
+      case 'skill-trials':
+        return <SkillTrialsScreen {...screenProps} />;
+      case 'contract-offers':
+        return <ContractOffersScreen {...screenProps} />;
       case 'weekly-briefing':
         return <WeeklyBriefingScreen {...screenProps} />;
       case 'day-planner':
