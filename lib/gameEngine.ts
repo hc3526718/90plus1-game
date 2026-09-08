@@ -121,7 +121,7 @@ export function createInitialWeek(playerClubId: string, weekNumber: number): Wee
       trainingCount: 0,
     })),
     hasMatch: phase !== 'summer', // No matches in summer
-    matchDay: 6, // Sunday
+    matchDay: 5, // Saturday (day 5 = Sat in Mon-Sun week)
     opponentId: opponent.id,
     matchType,
   };

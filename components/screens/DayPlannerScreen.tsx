@@ -20,10 +20,24 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
   const isMatchDay = currentDay === currentWeek.matchDay;
   const currentDayPlan = currentWeek.days[currentDay];
   
-  // Check for special event on day start (RARE - 15% chance)
+  // Determine day type for proper handling
+  const getDayType = (day: number): 'training' | 'light' | 'rest' => {
+    if (day >= 0 && day <= 3) return 'training'; // Mon-Thu
+    if (day === 4) return 'light'; // Friday
+    return 'rest'; // Sunday
+  };
+
+  const dayType = getDayType(currentDay);
+  
+  // Check for special event on day start
   useEffect(() => {
     if (!isMatchDay && !currentDayPlan.completed && !dayCompleted) {
-      const shouldShowEvent = Math.random() < 0.15; // RARE: 15% chance
+      // Event probability based on day type
+      let eventChance = 0.15; // Base 15%
+      if (dayType === 'rest') eventChance = 0.30; // Sunday: 30% chance for social events
+      if (dayType === 'light') eventChance = 0.10; // Friday: 10% chance
+      
+      const shouldShowEvent = Math.random() < eventChance;
       
       if (shouldShowEvent) {
         // Generate ONE special event
@@ -54,17 +68,38 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
   const autoTrain = () => {
     if (currentDayPlan.completed || dayCompleted) return;
 
+    // Adjust training based on day type
+    let title = 'Training Session';
+    let description = 'Standard training day';
+    let energyCost = 20;
+    let formGain = 5;
+    let trustGain = 2;
+
+    if (dayType === 'light') {
+      title = 'Light Training';
+      description = 'Recovery and tactical work';
+      energyCost = 10;
+      formGain = 3;
+      trustGain = 1;
+    } else if (dayType === 'rest') {
+      title = 'Rest Day';
+      description = 'Recovery and relaxation';
+      energyCost = 0;
+      formGain = 0;
+      trustGain = 0;
+    }
+
     const trainingActivity: ActivityOption = {
       id: 'auto-train',
-      category: 'training',
-      title: 'Training Session',
-      description: 'Standard training day',
-      energyCost: 20,
+      category: dayType === 'rest' ? 'rest' : 'training',
+      title,
+      description,
+      energyCost,
       unlocked: true,
       effects: {
-        energy: -20,
-        form: 5,
-        trust: 2,
+        energy: dayType === 'rest' ? 20 : -energyCost,
+        form: formGain,
+        trust: trustGain,
       },
     };
 
@@ -191,6 +226,13 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
     return days[day];
   };
 
+  const getDayLabel = (day: number) => {
+    if (day >= 0 && day <= 3) return 'Training Day';
+    if (day === 4) return 'Light Training';
+    if (day === 5) return 'Match Day';
+    return 'Rest Day';
+  };
+
   return (
     <div className="screen day-planner-screen">
       {onReturnToMenu && (
@@ -200,7 +242,8 @@ export default function DayPlannerScreen({ gameState, setGameState, onReturnToMe
       )}
       <div className="screen-header">
         <h2>{getDayName(currentDay)}</h2>
-        <p>Week {currentWeek.weekNumber} - Day {currentDay + 1}</p>
+        <p className="day-type">{getDayLabel(currentDay)}</p>
+        <p>Week {currentWeek.weekNumber}</p>
       </div>
 
       <div className="player-status">
