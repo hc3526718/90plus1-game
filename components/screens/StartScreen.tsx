@@ -3,9 +3,10 @@ interface StartScreenProps {
   onNewGame: () => void;
   onContinue: () => void;
   onDeleteSave?: () => void;
+  onSettings?: () => void;
 }
 
-export default function StartScreen({ hasSave, onNewGame, onContinue, onDeleteSave }: StartScreenProps) {
+export default function StartScreen({ hasSave, onNewGame, onContinue, onDeleteSave, onSettings }: StartScreenProps) {
   return (
     <div className="screen start-screen">
       <div className="title-card">
@@ -26,6 +27,11 @@ export default function StartScreen({ hasSave, onNewGame, onContinue, onDeleteSa
         {hasSave && onDeleteSave && (
           <button className="menu-btn danger" onClick={onDeleteSave}>
             DELETE SAVE
+          </button>
+        )}
+        {onSettings && (
+          <button className="menu-btn" onClick={onSettings}>
+            ⚙️ SETTINGS
           </button>
         )}
       </div>

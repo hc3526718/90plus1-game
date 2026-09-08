@@ -195,5 +195,5 @@ export interface GameState {
   trialResults: TrialResult[];
   trialsCompleted: boolean;
   
-  gameScreen: 'start' | 'skill-trials' | 'contract-offers' | 'create-player' | 'weekly-briefing' | 'day-planner' | 'match' | 'minigame' | 'post-match' | 'transfer-decision';
+  gameScreen: 'start' | 'settings' | 'skill-trials' | 'contract-offers' | 'create-player' | 'weekly-briefing' | 'day-planner' | 'match' | 'minigame' | 'post-match' | 'transfer-decision' | 'lifestyle-shop';
 }

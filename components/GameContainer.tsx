@@ -7,6 +7,7 @@ import { CLUBS } from '@/lib/gameData';
 import { saveGame, loadGame, hasSavedGame, deleteSave, validateSave } from '@/lib/storage';
 
 import StartScreen from './screens/StartScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import CreatePlayerScreen from './screens/CreatePlayerScreen';
 import SkillTrialsScreen from './screens/SkillTrialsScreen';
 import ContractOffersScreen from './screens/ContractOffersScreen';
@@ -81,6 +82,31 @@ export default function GameContainer() {
     setGameState(null);
   };
 
+  const handleSettings = () => {
+    if (gameState) {
+      setGameState({
+        ...gameState,
+        gameScreen: 'settings',
+      });
+    } else {
+      // Create a minimal state just for settings
+      setGameState({
+        player: createNewPlayer('', 'right'),
+        clubs: CLUBS,
+        currentWeek: createInitialWeek('heath-united', 1),
+        partner: null,
+        teammates: [],
+        agent: createStarterAgent(),
+        transferOffers: [],
+        matchState: null,
+        minigameState: null,
+        trialResults: [],
+        trialsCompleted: false,
+        gameScreen: 'settings',
+      });
+    }
+  };
+
   if (!initialized) {
     return (
       <div className="game-container loading">
@@ -96,6 +122,7 @@ export default function GameContainer() {
         onNewGame={startNewGame}
         onContinue={continueGame}
         onDeleteSave={handleDeleteSave}
+        onSettings={handleSettings}
       />
     );
   }
@@ -111,6 +138,8 @@ export default function GameContainer() {
     switch (gameState.gameScreen) {
       case 'start':
         return <StartScreen hasSave={hasSave} onNewGame={startNewGame} onContinue={continueGame} onDeleteSave={handleDeleteSave} />;
+      case 'settings':
+        return <SettingsScreen gameState={gameState} setGameState={setGameState} onReturnToMenu={handleReturnToMenu} />;
       case 'create-player':
         return <CreatePlayerScreen {...screenProps} />;
       case 'skill-trials':
@@ -130,7 +159,7 @@ export default function GameContainer() {
       case 'transfer-decision':
         return <TransferDecisionScreen {...screenProps} />;
       default:
-        return <StartScreen hasSave={hasSave} onNewGame={startNewGame} onContinue={continueGame} onDeleteSave={handleDeleteSave} />;
+        return <StartScreen hasSave={hasSave} onNewGame={startNewGame} onContinue={continueGame} onDeleteSave={handleDeleteSave} onSettings={handleSettings} />;
     }
   };
 
