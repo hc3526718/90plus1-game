@@ -1,6 +1,19 @@
+import { useState } from 'react';
 import { GameState } from '@/lib/types';
 import { updatePlayerAfterMatch, createInitialWeek, checkTransferOffers } from '@/lib/gameEngine';
 import { getClubById } from '@/lib/gameData';
+
+type CardValue = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 'J' | 'Q' | 'K' | 'A';
+
+const CARD_DECK: CardValue[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A'];
+
+function getCardNumericValue(card: CardValue): number {
+  if (typeof card === 'number') return card;
+  if (card === 'J') return 11;
+  if (card === 'Q') return 12;
+  if (card === 'K') return 13;
+  return 14; // Ace
+}
 
 interface PostMatchScreenProps {
   gameState: GameState;
@@ -9,6 +22,14 @@ interface PostMatchScreenProps {
 }
 
 export default function PostMatchScreen({ gameState, setGameState, onReturnToMenu }: PostMatchScreenProps) {
+  // Bus gambling state
+  const [isGambling, setIsGambling] = useState(false);
+  const [currentCard, setCurrentCard] = useState<CardValue | null>(null);
+  const [nextCard, setNextCard] = useState<CardValue | null>(null);
+  const [gamblingStreak, setGamblingStreak] = useState(0);
+  const [gamblingMessage, setGamblingMessage] = useState('');
+  const [playerMoney, setPlayerMoney] = useState(gameState.player.money);
+
   const handleReturnToMenuSafe = () => {
     if (onReturnToMenu) {
       onReturnToMenu();
@@ -58,8 +79,9 @@ export default function PostMatchScreen({ gameState, setGameState, onReturnToMen
   const lost = !won && !drew;
 
   const handleContinue = () => {
-    // Update player stats
+    // Update player stats (including gambling money changes)
     const updatedPlayer = updatePlayerAfterMatch(gameState.player, matchState, won, drew);
+    updatedPlayer.money = playerMoney; // Apply gambling results
     
     // Check for transfer offers
     const offers = checkTransferOffers(updatedPlayer);
@@ -127,6 +149,68 @@ export default function PostMatchScreen({ gameState, setGameState, onReturnToMen
     }
   };
 
+  // Bus gambling functions
+  const startGambling = () => {
+    if (playerMoney < 50) {
+      setGamblingMessage('Not enough money to gamble!');
+      return;
+    }
+    setIsGambling(true);
+    setGamblingStreak(0);
+    const firstCard = CARD_DECK[Math.floor(Math.random() * CARD_DECK.length)];
+    setCurrentCard(firstCard);
+    setNextCard(null);
+    setGamblingMessage(`Your card: ${firstCard}. Higher or Lower?`);
+  };
+
+  const guess = (guessHigher: boolean) => {
+    if (!currentCard) return;
+    
+    const newCard = CARD_DECK[Math.floor(Math.random() * CARD_DECK.length)];
+    setNextCard(newCard);
+    
+    const currentValue = getCardNumericValue(currentCard);
+    const nextValue = getCardNumericValue(newCard);
+    
+    const correct = (guessHigher && nextValue > currentValue) || (!guessHigher && nextValue < currentValue) || nextValue === currentValue;
+    
+    if (correct) {
+      const winnings = 50 * (1 + gamblingStreak);
+      setPlayerMoney(prev => prev + winnings);
+      setGamblingStreak(prev => prev + 1);
+      setGamblingMessage(`✅ Correct! Won £${winnings}. Streak: ${gamblingStreak + 1}`);
+      
+      // Continue or cash out
+      setTimeout(() => {
+        setCurrentCard(newCard);
+        setNextCard(null);
+        setGamblingMessage(`Your card: ${newCard}. Higher or Lower?`);
+      }, 2000);
+    } else {
+      const loss = 50 + (gamblingStreak * 50);
+      setPlayerMoney(prev => prev - loss);
+      setGamblingMessage(`❌ Wrong! Lost £${loss}. Game over.`);
+      
+      setTimeout(() => {
+        setIsGambling(false);
+        setGamblingStreak(0);
+        setCurrentCard(null);
+        setNextCard(null);
+      }, 2000);
+    }
+  };
+
+  const cashOut = () => {
+    const winnings = gamblingStreak * 50;
+    setGamblingMessage(`Cashed out with £${winnings}!`);
+    setTimeout(() => {
+      setIsGambling(false);
+      setGamblingStreak(0);
+      setCurrentCard(null);
+      setNextCard(null);
+    }, 1500);
+  };
+
   return (
     <div className="screen post-match-screen">
       {onReturnToMenu && (
@@ -168,6 +252,56 @@ export default function PostMatchScreen({ gameState, setGameState, onReturnToMen
       <div className="manager-reaction">
         <h3>Manager's Reaction</h3>
         <p className="manager-quote">"{getManagerComment()}"</p>
+      </div>
+
+      {/* Bus Gambling (JfG2 feature) */}
+      <div className="bus-gambling">
+        <h3>🚌 Bus Journey Home</h3>
+        {!isGambling ? (
+          <div className="gambling-intro">
+            <p>The lads are playing cards on the bus. Fancy a game?</p>
+            <p className="money-display">Your money: £{playerMoney}</p>
+            <button 
+              className="menu-btn secondary"
+              onClick={startGambling}
+              disabled={playerMoney < 50}
+            >
+              PLAY HIGHER/LOWER (£50)
+            </button>
+          </div>
+        ) : (
+          <div className="gambling-active">
+            <div className="card-display">
+              {currentCard && (
+                <div className="card current-card">
+                  <span className="card-value">{currentCard}</span>
+                </div>
+              )}
+              {nextCard && (
+                <div className="card next-card">
+                  <span className="card-value">{nextCard}</span>
+                </div>
+              )}
+            </div>
+            <p className="gambling-prompt">{gamblingMessage}</p>
+            <p className="money-display">Money: £{playerMoney} | Streak: {gamblingStreak}</p>
+            {!nextCard && currentCard && (
+              <div className="gambling-buttons">
+                <button className="menu-btn primary" onClick={() => guess(true)}>
+                  HIGHER
+                </button>
+                <button className="menu-btn secondary" onClick={() => guess(false)}>
+                  LOWER
+                </button>
+                {gamblingStreak > 0 && (
+                  <button className="menu-btn" onClick={cashOut}>
+                    CASH OUT (£{gamblingStreak * 50})
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="match-impact">
